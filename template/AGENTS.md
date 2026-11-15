@@ -125,15 +125,34 @@ uv run python -m agents --json run git commit_feature --id DATA-001 --title "...
 
 ## Qué agentes hay según el perfil
 
+{% if language == 'java' %}
+Este proyecto es **Java**. El plano de control (Python) trae el núcleo de
+calidad sin los agentes DS/ML (data, ml, mlflow, notebook no existen aquí) y
+suma los **dominios Java**: `batch`, `migrations`, `security`, `api` (Spring),
+`architecture` (ArchUnit) y `ops` (observabilidad) — cada uno con agente,
+contrato, tests y workflow skill (`skill batch_workflow`, etc.). No asumas que
+un agente existe — comprueba lo que hay instalado:
+{% else %}
 Este proyecto se generó con el perfil **`{{ proyecto_perfil }}`**. El conjunto de
 agentes Python no es fijo: depende del perfil y de los extras elegidos. No
 asumas que un agente existe — comprueba lo que hay instalado:
+{% endif %}
 
 ```bash
-uv run python -m agents list                # los agentes disponibles, desde la CLI
-uv run python -m agents describe <agente>   # acciones y contrato de uno
+{% if language == 'java' %}uv run --no-project {% endif %}python -m agents list                # los agentes disponibles, desde la CLI
+{% if language == 'java' %}uv run --no-project {% endif %}python -m agents describe <agente>   # acciones y contrato de uno
 ```
 
+{% if language == 'java' %}
+| Conjunto | Agentes |
+|----------|---------|
+| Núcleo de gobierno | harness, git, test, review, doctor, plan, env, cicd, make, doc, documentation, dependency, secrets, memory{% if use_sdd %}, mutation{% endif %}{% if use_rag %}, rag{% endif %} |
+| Dominios Java | batch, migrations, security, api, architecture, ops |
+
+Los agentes ligados a extras se excluyen cuando el extra está apagado
+(rag, mutation). La documentación de `orquestador.md` y
+`agents_reference.md` ya refleja qué skills son aplicables a este perfil.
+{% else %}
 | Perfil | Agentes | Qué incluye |
 |--------|---------|-------------|
 | `minimo` | {{ 19 + (1 if use_rag else 0) + (1 if use_sdd else 0) + (1 if use_api else 0) + (1 if use_docker else 0) + (1 if use_integration else 0) + (1 if use_mlflow else 0) + (1 if graphify_mode != 'no' else 0) + (4 if proyecto_perfil in ['completo', 'manual'] else 0) }} | Núcleo de calidad (harness, git, test, review, data, ml...) |
@@ -152,6 +171,7 @@ Los agentes ligados a extras se excluyen cuando el extra está apagado
 equipo (supervisor, research, audit, installer) solo existen en `completo` y
 `manual`. La documentación de `orquestador.md` y `agents_reference.md` ya
 refleja qué skills son aplicables a este perfil.
+{% endif %}
 {% if use_sdd %}
 ## Spec-driven: el contrato antes del código
 

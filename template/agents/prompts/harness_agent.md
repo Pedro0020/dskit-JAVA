@@ -72,9 +72,9 @@ Ver el ciclo completo: `skill harness_workflow`.
 | `run harness release` | `--id` |
 | `run harness write_feature` | `--id`, `--content` |
 | `run harness approve` | `--id`, `--owner` |
-| `run harness finish` | `--id`, `--evidence`, `--changes`, `--decisions`, `--pending` |
+| `run harness finish` | `--id`, `--evidence`, `--changes`, `--decisions`, `--pending`, `--certainty` |
 | `run harness block` | `--id`, `--reason` |
-| `run harness record` | `--agent`, `--id`, `--content`, `--verdict` |
+| `run harness record` | `--agent`, `--id`, `--content`, `--verdict`, `--certainty`, `--packet` |
 | `run harness gate` | `--quick` |
 | `run harness add` | `--id`, `--title`, `--description`, `--criteria`, `--depends_on` |
 
@@ -87,6 +87,9 @@ Ver el ciclo completo: `skill harness_workflow`.
 - escribir código del producto → 'refactor' y el implementer
 - ejecutar los tests por su cuenta → los ejecuta init.sh, o el agente 'test'
 - cerrar una feature sin evidencia → devuelve needs, nunca la da por buena
+- cerrar una feature con el reviewer en rechazo → GATE-3, devuelve needs
+- cerrar una feature con certeza baja salvo verificación explícita → devuelve needs
+- dejar que dos features reclamen el mismo fichero → claim devuelve needs
 
 **Necesita que le den:** el id de la feature; la evidencia real de verificación para cerrarla
 

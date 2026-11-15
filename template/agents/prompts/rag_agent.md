@@ -91,19 +91,21 @@ buscar si detecta el desajuste.
 | `run rag search` | `--query` (obligatorio) · `--top_k`, `--hybrid`, `--min_score`, `--file_type`, `--source`, `--max_per_source`, `--expand` |
 | `run rag status` | — |
 | `run rag evaluate` | `--top_k` |
+| `run rag refresh` | `--dry_run`, `--months`, `--max_new`, `--topics`, `--from_objective` |
 
 ## Límites
 
-**Rol.** RAG local: indexa código, prompts, docs/ (incl. vault y corpus de conocimiento), la memoria del arnés y URLs externas; busca en lenguaje natural fundiendo similitud vectorial (ChromaDB) con BM25 léxico.
+**Rol.** RAG local: indexa código, prompts, docs/ (incl. vault y corpus), el corpus de conocimiento (docs/knowledge/) y la memoria del arnés; busca en lenguaje natural fundiendo similitud vectorial (ChromaDB) con BM25 léxico. Mantiene el corpus al día.
 
 **No hace:**
 - construir o modificar el grafo graphify → knowledge
-- buscar papers académicos nuevos → research
-- ejecutar código ni modificar archivos del proyecto
+- buscar papers académicos nuevos para el estado del arte → research
+- ejecutar código arbitrario ni modificar código del proyecto
+- escribir fuera de docs/knowledge/papers/, docs/knowledge/sources.json y .rag-index/
 
-**Necesita que le den:** que exista un índice (ejecutar 'rag index' primero)
+**Necesita que le den:** que exista un índice (ejecutar 'rag index' primero); red para refresh; sin ella el mantenimiento falla de forma controlada
 
-**Escribe en (nadie más toca esto):** .rag-index/ (índice vectorial ChromaDB, gitignored)
+**Escribe en (nadie más toca esto):** .rag-index/ (índice vectorial ChromaDB, gitignored); docs/knowledge/papers/ y docs/knowledge/sources.json (registro de fuentes del corpus)
 
 **Se apoya en:** knowledge, doc, plan
 

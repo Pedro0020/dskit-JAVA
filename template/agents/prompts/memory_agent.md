@@ -35,7 +35,7 @@ acota; `memory_edit` actualiza/olvida/invalida por id sin reescribir el resto.
 | `run memory note` | `--key`, `--value` (obligatorio) · `--kind`, `--scope` |
 | `run memory recall` | `--key` (obligatorio) |
 | `run memory forget` | `--key` (obligatorio) |
-| `run memory memory_edit` | `--id` (obligatorio) · `--action` (update/forget/invalidate) · `--value`, `--scope`, `--ttl` |
+| `run memory memory_edit` | `--id` (obligatorio) · `--action`, `--value`, `--scope`, `--ttl` |
 | `run memory search` | `--query` (obligatorio) · `--kind`, `--scope`, `--limit` |
 | `run memory snapshot` | — |
 | `run memory inject` | `--context`, `--max_entries` |
