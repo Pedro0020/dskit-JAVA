@@ -28,21 +28,20 @@ Las tres primeras features del backlog no son trabajo de calentamiento, son la
 dirección del proyecto — y el resto dependen de ellas, así que el arnés no
 deja empezar por la cuarta:
 
-1. **`SCOPE-001` — qué se quiere resolver.** La pregunta, la métrica de éxito
+1. **`SCOPE-001` — qué se quiere resolver.** El objetivo, la métrica de éxito
    con un umbral numérico y el criterio de parada, en `references/00-objetivo.md`.
-2. **`RESEARCH-001` — qué se sabe ya del tema.** Papers y fuentes con el agente
-   `research`, resumidas en `references/01-estado-del-arte.md`: qué se toma de
-   cada una, qué se descarta y qué rango de resultados reporta la literatura.
-3. **`EDA-001` — qué dicen los datos.** Los notebooks `0-0`, `0-1` y `0-2`
-   sobre los datos reales, con los hallazgos en `references/02-eda.md` y una
-   respuesta explícita a si esos datos pueden contestar la pregunta de
-   `SCOPE-001`.
+2. **`ARCH-001` — qué forma tiene el sistema.** Capas, paquetes y dependencias
+   permitidas en `references/01-arquitectura.md`, con un test de ArchUnit que
+   falle al violarlas.
+3. **`DB-001` — qué datos y esquema hay** (si el proyecto usa base de datos).
+   El modelo de datos y las migraciones reproducibles (Flyway o Liquibase),
+   antes de escribir el primer job o endpoint.
 
-Sin el paso 1 no hay contra qué decidir nada después; sin el 2 se improvisa
-una arquitectura que alguien ya descartó; sin el 3 se construye un pipeline
-sobre datos que no sirven. `MODEL-001` cierra el círculo: su baseline se
-compara con el umbral de `SCOPE-001` y con el rango de `RESEARCH-001`, para
-que «el modelo va bien» sea comparable con algo.
+Sin el paso 1 no hay contra qué decidir nada después; sin el 2 el código fija
+la arquitectura por accidente; sin el 3 se construye sobre un esquema que nadie
+puede reproducir. `JOB-001`/`API-001` cierran el círculo: su primera entrega se
+compara con la métrica de `SCOPE-001`, para que «funciona» sea comparable con
+algo.
 
 ## La regla que no se salta
 
