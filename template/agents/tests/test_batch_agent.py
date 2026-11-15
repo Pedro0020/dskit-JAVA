@@ -66,3 +66,24 @@ def test_batch_fuera_de_java_rechaza(context):
     result = BatchAgent(context=context).validate_job()
     assert not result.success
     assert "java" in result.message
+
+
+def test_batch_detecta_chunk_sin_transaction_manager(java_ctx):
+    """Caso canónico (JAVA-014b): un chunk step sin transaction manager se rechaza."""
+    batch = java_ctx.root / "src" / "main" / "java" / "com" / "ejemplo" / "batch"
+    (batch / "WriterConfig.java").write_text(
+        "new StepBuilder(\"writerStep\", jobRepository).chunk(100).writer(writer).build();\n"
+    )
+    result = BatchAgent(context=java_ctx).validate_job()
+    assert not result.success
+    assert any(c["id"] == "transacciones" and not c["ok"] for c in result.data["checks"])
+    assert any("transaction manager" in w for w in result.warnings)
+
+
+def test_batch_acepta_chunk_con_transaction_manager(java_ctx):
+    batch = java_ctx.root / "src" / "main" / "java" / "com" / "ejemplo" / "batch"
+    (batch / "WriterConfig.java").write_text(
+        "new StepBuilder(\"writerStep\", jobRepository).chunk(100, transactionManager).writer(writer).build();\n"
+    )
+    result = BatchAgent(context=java_ctx).validate_job()
+    assert result.success, result.warnings

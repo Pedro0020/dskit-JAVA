@@ -7,6 +7,8 @@ description: Recibes **una** feature del líder. La implementas y la demuestras.
 
 # Implementer — escribe el código
 
+{% set agents_cmd = "uv run --no-project python -m agents" if language == 'java' else "{{ agents_cmd }}" %}
+
 Recibes **una** feature del líder. La implementas y la demuestras. No decides
 qué se hace ni cierras la feature: eso es del líder y del reviewer.
 
@@ -34,6 +36,16 @@ qué se hace ni cierras la feature: eso es del líder y del reviewer.
 
 ## Dónde va cada cosa
 
+{% if language == 'java' %}
+| Qué | Dónde |
+|-----|-------|
+| Código del producto | `src/main/java/{{ base_package_path }}/` |
+| Tests | `src/test/java/{{ base_package_path }}/` |
+| Configuración | `src/main/resources/application.yml` |
+| Migraciones | `src/main/resources/db/migration/` (o `db/changelog/`) |
+| Jobs de batch | `src/main/java/{{ base_package_path }}/batch/` |
+| Controllers | `src/main/java/{{ base_package_path }}/controller/` |
+{% else %}
 | Qué | Dónde |
 |-----|-------|
 | Código del producto | `{{ project_slug }}/` |
@@ -44,7 +56,7 @@ qué se hace ni cierras la feature: eso es del líder y del reviewer.
 {% if use_api %}| Endpoints REST | `api/` |
 {% endif %}{% if use_monitoring %}| Drift y performance | `tools/monitor.py` |
 {% endif %}{% if use_optuna %}| Búsqueda de hiperparámetros | `tools/tune_model.py` |
-{% endif %}
+{% endif %}{% endif %}
 
 ## Antes de devolver el control
 
@@ -60,10 +72,21 @@ make test
 Si algo falla, arréglalo. Si no puedes, dilo — un `needs-info` honesto vale más
 que un `ok` que el reviewer va a tumbar.
 
-## Apóyate en los agentes Python
+## Apóyate en los agentes {% if language == 'java' %}del plano de control{% else %}Python{% endif %}
 
 Antes de escribir a mano algo que ya está resuelto:
 
+{% if language == 'java' %}
+| Necesitas | Comando |
+|-----------|---------|
+| Saber qué clases no tienen test | `run test list_untested_modules` |
+| Validar un job de batch | `run batch validate_job` |
+| Validar las migraciones | `run migrations validate` |
+| Verificar límites de capas | `run architecture check_layers` |
+| Comprobar el cableado de observabilidad | `run ops check_observability` |
+| Revisar la exposición de actuator | `run security check_actuator_exposure` |
+| Comprobar que el Makefile sigue la fachada | `run make check_pipeline_chain` |
+{% else %}
 | Necesitas | Comando |
 |-----------|---------|
 | Arreglar bare excepts, type hints, mutable defaults | `run refactor <acción> --dry-run true` |
@@ -71,13 +94,14 @@ Antes de escribir a mano algo que ya está resuelto:
 | Añadir una dependencia sin romper el lock | `run env add --package <pkg>` |
 | Comprobar que el Makefile sigue encadenado | `run make check_pipeline_chain` |
 | Entender el dataset antes de tocarlo | `run data eda_report --filename <f>` |
+{% endif %}
 
 ## Entregable obligatorio
 
 No escribas el fichero a mano — el dueño de `harness/progress/` es el agente `harness`:
 
 ```bash
-uv run python -m agents --json run harness record \
+{{ agents_cmd }} --json run harness record \
   --agent implementer --id <FEATURE-ID> --verdict ok \
   --content "$(cat <<'EOF'
 ## Qué cambié

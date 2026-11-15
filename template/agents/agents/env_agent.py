@@ -87,13 +87,16 @@ class EnvAgent(BaseAgent):
         )
 
     def sync(self, *, extras: str | None = None) -> AgentResult:
-        """Ejecuta `uv sync` (Python) o `./mvnw dependency:go-offline` (Java)."""
+        """Ejecuta `uv sync` (Python) o resuelve dependencias del build (Java)."""
         if self._language() == "java":
-            mvnw = "mvnw.cmd" if os.name == "nt" else "./mvnw"
-            result = run_command([mvnw, "-q", "dependency:go-offline"], cwd=self.ctx.root)
+            from agents.tools.maven_tool import MavenTool
+
+            tool = MavenTool.build_tool(self.ctx.root)
+            goals = ["dependency:go-offline"] if tool == "maven" else ["dependencies"]
+            result = MavenTool.run(self.ctx.root, goals, quiet=True)
             if not result.ok:
-                return AgentResult(False, self.name, "sync", f"mvnw dependency:go-offline falló: {result.stderr.strip()}")
-            return AgentResult(True, self.name, "sync", "Dependencias Maven resueltas correctamente.")
+                return AgentResult(False, self.name, "sync", f"{tool} falló resolviendo dependencias: {result.stderr.strip()}")
+            return AgentResult(True, self.name, "sync", f"Dependencias de {tool} resueltas correctamente.")
         cmd = ["uv", "sync"]
         if extras:
             for ext in extras.split(","):
@@ -104,19 +107,26 @@ class EnvAgent(BaseAgent):
         return AgentResult(True, self.name, "sync", "Entorno sincronizado correctamente.")
 
     def check_lock_sync(self) -> AgentResult:
-        """Verifica pyproject/uv.lock (Python) o el wrapper de Maven (Java)."""
+        """Verifica pyproject/uv.lock (Python) o el wrapper del build (Java)."""
         if self._language() == "java":
-            mvnw = self.ctx.root / ("mvnw.cmd" if os.name == "nt" else "mvnw")
-            props = self.ctx.root / ".mvn" / "wrapper" / "maven-wrapper.properties"
-            missing = [str(p) for p in (mvnw, props) if not p.exists()]
+            from agents.tools.maven_tool import MavenTool
+
+            tool = MavenTool.build_tool(self.ctx.root)
+            wrapper = MavenTool.mvnw_path(self.ctx.root)
+            props = (
+                self.ctx.root / ".mvn" / "wrapper" / "maven-wrapper.properties"
+                if tool == "maven"
+                else self.ctx.root / "gradle" / "wrapper" / "gradle-wrapper.properties"
+            )
+            missing = [str(p) for p in (wrapper, props) if not p.exists()]
             if missing:
                 return AgentResult(
                     False, self.name, "check_lock_sync",
-                    f"Falta el wrapper de Maven: {', '.join(missing)}.",
+                    f"Falta el wrapper de {tool}: {', '.join(missing)}.",
                 )
             return AgentResult(
                 True, self.name, "check_lock_sync",
-                "Wrapper de Maven presente; las dependencias se resuelven con ./mvnw.",
+                f"Wrapper de {tool} presente; las dependencias se resuelven con el build.",
             )
         result = run_command(["uv", "lock", "--check"], cwd=self.ctx.root)
         if result.ok:

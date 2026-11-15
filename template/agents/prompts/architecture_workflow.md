@@ -15,6 +15,11 @@ ArchUnit + límites de capas).
    y empieza a morder con la primera clase).
 3. **Ausencia de test**: `run architecture check_archunit_test` — con
    `use_archunit=true`, sin `*Architecture*Test.java` es un fallo.
+4. **Memoria estructural**: `run architecture build_vault` (o `make knowledge`)
+   regenera `docs/vault/`: IA_index con el mapa de capas, arquitectura con
+   dependencias y violaciones, fichas de dominio, grafo mermaid y fichas de
+   agentes. Es determinista y offline. Con `use_graphify=true`,
+   `run architecture enrich_graphify` añade la capa semántica (GEMINI_API_KEY).
 
 ## Reglas duras (no negociables)
 

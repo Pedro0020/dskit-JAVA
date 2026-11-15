@@ -443,4 +443,41 @@ dependencias, siguiendo la filosofía de `template/.opencode/agents/lider.md`
     → copiar el fichero formateado al template sustituyendo el paquete por
     `{{ base_package }}`. Verificar siempre con `bash ./init.sh` completo
     (no solo `--quick`).
+- **Fase 3+4 completadas (15 Nov 2026)** — ramas `feat/java-004-prompts` →
+  `feat/java-quality-ci` → `feat/java-p4`:
+  - JAVA-004: prompts de `lider/explorer/implementer/reviewer` con
+    `{% set agents_cmd %}` (`uv run --no-project` en Java), tablas de rutas y
+    ejemplos Java, R-criterios Java en el reviewer; docs del plano de control
+    (agents/README, doc_agent, agents_reference), workflows data/ml/rag
+    excluidos y `api_workflow` fuera en Java; `prompts_sync._first_paragraph`
+    ignora directivas Jinja (las `{% set %}` rompían la description).
+  - JAVA-012c/013b/014: fachada ampliada (migrations/batch-run/context-check/
+    index-rag/knowledge; PMD en lint), CI Java con matriz 17+21 + job de
+    evals + tests de agentes (`--with pytest --with hypothesis --with numpy
+    --with matplotlib`, porque graph sigue en el render hasta decidir 005c),
+    SBOM+Trivy y job PIT. `ActuatorExposureTest` **necesita
+    `@ActiveProfiles("test")`** — sin perfil arranca contra la BD de
+    producción y el gate cae (lo cazó el render Postgres).
+  - Rúbrica: `CRITERIOS_REVISION_JAVA` (R-J1..R-J5) + `criterios_revision(language)`;
+    `batch.validate_job` rechaza chunk sin transaction manager (caso canónico);
+    `test_orchestrator` usa `get_context().is_java` (el fixture `context` es
+    sintético y no hereda el lenguaje).
+  - JAVA-016: `structure_tool` (stdlib) genera `docs/vault/` determinista
+    (IA_index, arquitectura, dominios, mermaid, fichas desde CONTRACTS,
+    `.obsidian/`); acción `architecture build_vault` + `make knowledge`;
+    `use_graphify` (opt-in, `graphifyy[gemini]` + GEMINI_API_KEY) con
+    `enrich_graphify` que instala el venv en `agents/workspace/graphify/`.
+    Ojo: `vault` no puede ser capability de architecture (colisiona con
+    knowledge).
+  - JAVA-001b fase 1: `build.gradle` + wrapper 8.10.2 (jar versionado),
+    gating copier por `build_tool`, `init.sh` y Makefile delegan en
+    `gradlew build`/tareas; `MavenTool` detecta el build tool y **traduce**
+    goals (test/verify/compile/jacoco/javadoc/bootRun, `--tests=*Clase`) y
+    rechaza con motivo los Maven-first (PIT/versions/OWASP/PMD). Rutas de
+    reportes: `build/test-results/test` y `build/reports/jacoco/test/...csv`.
+    Verificado: `./gradlew build` verde en render (tests+JaCoCo 80%+Spotless).
+  - El validador del template: skip de binarios (`.jar`) y `use_graphify` en
+    la lista de variables + combos `java-graphify`/`java-gradle`.
+  - E2E: render Postgres+security+observability → gate verde; `copier update`
+    verificado (src git + proyecto git, v2 aplicada).
 

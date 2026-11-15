@@ -114,3 +114,51 @@ def test_parse_pit_summary(tmp_path: Path):
     assert summary["timeout"] == 1
     assert summary["score"] == 66.7
     assert len(summary["detail"]) == 3
+
+
+# -- Gradle (JAVA-001b): deteccion y traduccion de goals ------------------------
+
+
+def test_build_tool_detecta_gradle(tmp_path: Path):
+    (tmp_path / "build.gradle").write_text("")
+    assert MavenTool.build_tool(tmp_path) == "gradle"
+
+
+def test_build_tool_detecta_maven(tmp_path: Path):
+    (tmp_path / "pom.xml").write_text("<project/>")
+    assert MavenTool.build_tool(tmp_path) == "maven"
+
+
+def test_translate_gradle_verify_a_build():
+    assert MavenTool._translate_gradle(["verify"]) == ["build"]
+
+
+def test_translate_gradle_test_con_tests():
+    assert MavenTool._translate_gradle(["test", "-Dtest=ApplicationTests"]) == [
+        "test", "--tests=*ApplicationTests",
+    ]
+
+
+def test_translate_gradle_jacoco_y_javadoc():
+    assert MavenTool._translate_gradle(["jacoco:report"]) == ["jacocoTestReport"]
+    assert MavenTool._translate_gradle(["javadoc:javadoc"]) == ["javadoc"]
+
+
+def test_translate_gradle_bootrun_con_args():
+    assert MavenTool._translate_gradle(
+        ["spring-boot:run", "-Dspring-batch.job.name=demoJob"]
+    ) == ["bootRun", "--args=--spring-batch.job.name=demoJob"]
+
+
+def test_translate_gradle_rechaza_pit_con_motivo():
+    from agents.exceptions import MissingDependencyError
+
+    with pytest.raises(MissingDependencyError, match="JAVA-001b"):
+        MavenTool._translate_gradle(["org.pitest:pitest-maven:mutationCoverage"])
+
+
+def test_translate_gradle_rechaza_versions_con_motivo():
+    from agents.exceptions import MissingDependencyError
+
+    with pytest.raises(MissingDependencyError, match="Maven"):
+        MavenTool._translate_gradle(["versions:display-dependency-updates"])

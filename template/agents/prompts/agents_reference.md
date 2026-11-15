@@ -32,16 +32,21 @@ el modelo pueda ignorar.
 | Agente | Hace |
 |--------|------|
 | `git` | Conventional Commits, changelog, release, PRs, tag_release y commit_feature (cierre de features) |
+{% if language != 'java' %}
 | `data` | EDA, detección de fugas, correlaciones |
 | `graph` | Audita figuras (vacías, aspect ratio) |
-{% if use_docker %}| `docker` | Lint Dockerfile, valida docker-compose |{% endif %}
+{% endif %}{% if use_docker %}| `docker` | Lint Dockerfile, valida docker-compose |{% endif %}
+{% if language != 'java' %}
 | `ml` | Inspecciona modelos, importancia, overfitting |
+{% endif %}
 | `review` | Funciones largas, except desnudos, duplicación |
 | `documentation` | Sincroniza README/Makefile, CHANGELOG, bump versión |
+{% if language != 'java' %}
 | `notebook` | Extrae salidas de notebooks, inserta comentarios |
+{% endif %}
 {% if proyecto_perfil in ['completo', 'manual'] %}| `installer` | Instala agentes externos en `agents/external/` |{% endif %}
 | `cicd` | Genera y valida workflows de CI/CD |
-| `test` | Ejecuta pytest, resumen cobertura, módulos sin test |
+| `test` | {% if language == 'java' %}Ejecuta `./mvnw test`, resumen de cobertura JaCoCo, clases sin test{% else %}Ejecuta pytest, resumen cobertura, módulos sin test{% endif %} |
 {% if use_sdd %}| `mutation` | **Mutation testing y CRAP**: ejecuta tools/mutate.py (¿muerden los tests?) y mide el riesgo de cambio por función |{% endif %}
 {% if use_integration %}| `integration` | **Tests de integración**: levanta servicios reales (Postgres vía Docker) y corre `tests/integration/` sin mocks |{% endif %}
 | `dependency` | Detecta paquetes desactualizados y vulnerabilidades |
@@ -84,15 +89,22 @@ con `skill <name>` cuando la tarea abarca todo un dominio.
 | Skill | Cuándo cargarlo | Agentes que orquesta |
 |-------|-----------------|----------------------|
 | `harness_workflow` | Ciclo del arnés: init.sh → backlog → implementar → revisar | `lider`, `explorer`, `implementer`, `reviewer`, `plan` |
+{% if language == 'java' %}| `dev_workflow` | Desarrollo: arquitectura/batch → test → commit → release | `architecture`, `batch`, `test`, `git` |
+| `batch_workflow` | Dominio Spring Batch: job → valida → ejecuta | `batch`, `git` |
+| `migrations_workflow` | Migraciones: crear → validar → undo | `migrations`, `git` |
+| `security_workflow` | Seguridad: actuator exposure → JWT → secretos | `security`, `secrets` |
+| `architecture_workflow` | Arquitectura: capas → ArchUnit | `architecture`, `test` |
+| `ops_workflow` | Observabilidad: health → métricas → traceId | `ops`, `batch` |
+{% else %}
 | `data_workflow` | Pipeline de datos: ingesta → features | `data`, `graph`, `knowledge` |
 | `ml_workflow` | Ciclo de modelo: entrenar → evaluar | `ml`, `mlflow`, `graph`, `knowledge` |
 | `dev_workflow` | Desarrollo: review → test → commit → release | `review`, `test`, `git` |
-{% if use_api %}| `api_workflow` | API REST: diseño → código → test | `api`, `test`, `refactor`, `docker` |
+{% endif %}{% if use_api and language != 'java' %}| `api_workflow` | API REST: diseño → código → test | `api`, `test`, `refactor`, `docker` |
 {% endif %}{% if use_docker %}| `docker_workflow` | Docker: build → lint → compose | `docker`, `cicd` |
 {% endif %}{% if use_monitoring %}| `monitoring_workflow` | Monitorización: dashboard → alerts | varios |
 {% endif %}{% if use_optuna %}| `optuna_workflow` | Hyperparameter tuning: search → best | `ml`, `mlflow` |
 {% endif %}{% if graphify_mode != "no" %}| `knowledge_workflow` | Grafo de conocimiento + vault | `knowledge`, `git` |
-{% endif %}{% if use_rag %}| `rag_workflow` | RAG semántico: index → search → URLs externas | `rag`, `plan`, `docsearch` |
+{% endif %}{% if use_rag and language != 'java' %}| `rag_workflow` | RAG semántico: index → search → URLs externas | `rag`, `plan`, `docsearch` |
 {% endif %}
 
 Los prompts fuente viven en `agents/prompts/` y se instalan como skills con:

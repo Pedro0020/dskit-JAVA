@@ -9,9 +9,12 @@ review → test → fix → commit → release
 
 | Paso | Comando | Agente | Verificación |
 |------|---------|--------|-------------|
-| Code review | `run review review_package` | `review` | busca funciones largas, except desnudos, duplicación |
+{% if language == 'java' %}{% raw %}| Code review | `run architecture check_layers` + `run batch validate_job` | `architecture` + `batch` | capas y batch: límites, transacciones, restartability |
+| Tests | `run test run_tests` | `test` | `./mvnw test` verde, JaCoCo ≥ umbral |
+| Fix | `pipeline fix` | `implementer` + `test` | arregla y verifica |{% endraw %}
+{% else %}| Code review | `run review review_package` | `review` | busca funciones largas, except desnudos, duplicación |
 | Tests | `run test run_tests` | `test` | pytest pasa, cobertura ≥ umbral |
-| Fix | `pipeline fix` | `refactor` + `test` | arregla y verifica |
+| Fix | `pipeline fix` | `refactor` + `test` | arregla y verifica |{% endif %}
 | Commit | `run git commit_with_changelog` | `git` + `documentation` | Conventional Commit + CHANGELOG |
 | Cierre de feature | `run git commit_feature --id X --title Y [--dry-run true]` | `git` + `documentation` | bump + CHANGELOG + commit, sin tag |
 | Release | `run git tag_release --version X.Y.Z` | `git` | tag + changelog + bump |
@@ -31,10 +34,13 @@ review → test → fix → commit → release
 | Agente | Acción principal |
 |--------|-----------------|
 | `git` | `suggest_commit_message`, `commit_with_changelog`, `commit_feature`, `tag_release`, `analyze_diff` |
-| `test` | `run_tests`, `coverage_summary`, `list_untested_modules` |
-| `review` | `review_package` — funciones largas, except, duplicación |
+| `test` | `run_tests`, `coverage_report`, `list_untested_modules` |
+{% if language == 'java' %}| `architecture` | `check_layers`, `run_architecture_tests` — límites de capas |
+| `batch` | `validate_job`, `run_job`, `explain_failure` — batch |
+| `ops` | `check_observability` — health/métricas |
+{% else %}| `review` | `review_package` — funciones largas, except, duplicación |
 | `refactor` | `fix_bare_excepts`, `add_type_hints`, `fix_mutable_defaults` |
-| `documentation` | `update_changelog`, `bump_version`, `sync_readme` |
+{% endif %}| `documentation` | `update_changelog`, `bump_version`, `sync_readme` |
 
 ## Convenciones
 - Commits: Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`)

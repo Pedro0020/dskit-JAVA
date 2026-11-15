@@ -212,12 +212,18 @@ class DoctorAgent(BaseAgent):
         }
 
     def _check_wrapper(self) -> dict:
-        mvnw = self.ctx.root / ("mvnw.cmd" if os.name == "nt" else "mvnw")
-        props = self.ctx.root / ".mvn" / "wrapper" / "maven-wrapper.properties"
-        missing = [str(p) for p in (mvnw, props) if not p.exists()]
+        from agents.tools.maven_tool import MavenTool
+
+        wrapper = MavenTool.mvnw_path(self.ctx.root)
+        props = (
+            self.ctx.root / ".mvn" / "wrapper" / "maven-wrapper.properties"
+            if MavenTool.build_tool(self.ctx.root) == "maven"
+            else self.ctx.root / "gradle" / "wrapper" / "gradle-wrapper.properties"
+        )
+        missing = [str(p) for p in (wrapper, props) if not p.exists()]
         if missing:
-            return {"ok": False, "message": f"falta el wrapper de Maven: {', '.join(missing)}"}
-        return {"ok": True, "message": "wrapper de Maven presente"}
+            return {"ok": False, "message": f"falta el wrapper del build: {', '.join(missing)}"}
+        return {"ok": True, "message": f"wrapper de {MavenTool.build_tool(self.ctx.root)} presente"}
 
     def _load_pyproject(self) -> dict | None:
         import tomllib

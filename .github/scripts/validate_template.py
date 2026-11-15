@@ -79,6 +79,7 @@ DEFAULTS = dict(
     use_pit=False,
     use_archunit=False,
     use_observability=False,
+    use_graphify=False,
 )
 
 #: Variables Java que NO ramifican la matriz all-pairs de Python: se prueban
@@ -96,6 +97,7 @@ JAVA_ONLY = {
     "use_pit",
     "use_archunit",
     "use_observability",
+    "use_graphify",
 }
 
 # Combos que ya rompieron algo alguna vez. All-pairs cubre interacciones de 2
@@ -167,6 +169,31 @@ PINNED: list[tuple[str, dict]] = [
             use_testcontainers=True,
             use_archunit=True,
             use_observability=True,
+        ),
+    ),
+    # Memoria semantica: graphify opt-in (vault + target knowledge-graph y .env).
+    (
+        "pinned:java-graphify",
+        dict(
+            language="java",
+            framework="spring-boot-batch",
+            db="h2",
+            migrations="flyway",
+            java_version="21",
+            use_observability=True,
+            use_graphify=True,
+        ),
+    ),
+    # Gradle: build.gradle + wrapper sustituyen a pom/mvnw; gate y CI delegados.
+    (
+        "pinned:java-gradle",
+        dict(
+            language="java",
+            build_tool="gradle",
+            framework="spring-boot-web+batch",
+            db="h2",
+            migrations="flyway",
+            java_version="21",
         ),
     ),
 ]
@@ -257,6 +284,10 @@ ALL_FILES = sorted(
         if f.is_file() and "__pycache__" not in str(f) and ".DS_Store" not in str(f)
     ]
 )
+
+#: Los binarios (p. ej. gradle/wrapper/gradle-wrapper.jar) no se renderizan ni
+#: se parsean: el validador solo audita texto.
+BINARY_SUFFIXES = (".jar", ".png", ".jpg", ".jpeg", ".gif", ".ico", ".pdf", ".zip", ".woff", ".woff2")
 
 BACKLOG_STATUS = ("pending", "in_progress", "done", "blocked")
 BACKLOG_REQUIRED = ("id", "title", "description", "acceptance_criteria", "status")
@@ -382,6 +413,8 @@ print()
 for label, combo in COMBOS:
     ctx = {**STD, **DEFAULTS, **combo, "_copier_answers": {}}
     for rel in ALL_FILES:
+        if rel.lower().endswith(BINARY_SUFFIXES):
+            continue
         raw = (BASE / rel).read_text(errors="replace")
         try:
             rendered = env.from_string(raw).render(**ctx)

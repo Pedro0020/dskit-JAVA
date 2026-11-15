@@ -20,7 +20,7 @@ esta carpeta completa y funcional desde el primer commit.
 ## Filosofía
 
 - **No es un chatbot.** Cada agente ejecuta tareas reales con herramientas
-  (git, docker, pandas, sklearn...), no conversa. El punto de entrada en
+  ({% if language == 'java' %}git, mvnw, jdeps, docker{% else %}git, docker, pandas, sklearn{% endif %}...), no conversa. El punto de entrada en
   lenguaje natural (`Orchestrator.dispatch`) es una capa fina de ruteo por
   encima de acciones deterministas, no un envoltorio de un LLM.
 - **Agnóstico de proveedor de IA.** `agents/` es Python puro, invocado por
@@ -29,19 +29,24 @@ esta carpeta completa y funcional desde el primer commit.
   herramienta concreta (Claude Code, Cursor, opencode...). Cualquier agente
   de codificación que pueda ejecutar comandos de shell puede usar este
   sistema exactamente igual.
-- **Una responsabilidad por agente.** `GitAgent` no toca datos, `DataAgent`
-  no toca Docker. Si una tarea necesita dos agentes, se orquestan en
+- **Una responsabilidad por agente.** {% if language == 'java' %}`BatchAgent`
+  no toca migraciones, `MigrationsAgent` no toca Docker.{% else %}`GitAgent`
+  no toca datos, `DataAgent` no toca Docker.{% endif %} Si una tarea necesita dos agentes, se orquestan en
   secuencia (ver `DocumentationAgent.update_changelog`, que llama a
   `GitAgent` internamente) — no se crea un agente todopoderoso.
 - **Cero dependencias innecesarias.** Todo lo que puede hacerse con la
   librería estándar de Python, se hace ahí (`subprocess`, `ast`, `sqlite3`,
-  `urllib`, `importlib.metadata`...). Las dependencias reales del template
+  `urllib`, `importlib.metadata`...). {% if language == 'java' %}El plano de
+  control de un proyecto Java corre con `uv run --no-project`: solo stdlib
+  (por eso data/ml/mlflow/notebook no existen aquí).{% else %}Las dependencias reales del template
   (pandas, numpy, scikit-learn, matplotlib, joblib) se reutilizan; nada
-  nuevo se añade a `pyproject.toml`.
+  nuevo se añade a `pyproject.toml`.{% endif %}
 - **Los agentes conocen este template**, no son genéricos: saben que el
-  código vive en `{{ project_slug }}/`, que los datasets viven en
+  código vive en {% if language == 'java' %}`src/main/java/{{ base_package_path }}/`, que los tests van en
+  `src/test/java/`, que el build es `./mvnw verify` y que los jobs de batch
+  viven en `.../batch/`{% else %}`{{ project_slug }}/`, que los datasets viven en
   `data/raw|interim|processed/`, que los modelos se guardan en
-  `models/*.joblib`, etc. (ver `agents/context.py`).
+  `models/*.joblib`{% endif %} (ver `agents/context.py`).
 
 ## Arquitectura
 
@@ -201,11 +206,21 @@ uv run python -m agents tools
   tiene. Solo hace falta la primera vez, en un proyecto sin este sistema —
   pregunta por ella si la necesitas.
 
-## Los 28 agentes
+## Los agentes
 
 Los ROLES (qué puede, qué no puede, qué necesita, qué posee) están en
 `agents/contracts.py` — esta tabla resume la responsabilidad y las
 herramientas de cada uno.
+
+{% if language == 'java' %}
+> **En este proyecto (Java)** el catálogo real es el núcleo de gobierno
+> (harness, git, test, review, doctor, plan, env, cicd, make, doc,
+> documentation, dependency, secrets, memory{% if use_sdd %}, mutation{% endif %}{% if use_rag %}, rag{% endif %}) más los
+> dominios Java (batch, migrations, security, api, architecture, ops).
+> `uv run --no-project python -m agents list` da la lista exacta. Las filas
+> de data/ml/mlflow/notebook/graph/refactor/knowledge/research/audit/
+> supervisor describen el template Python y **no existen en este render**.
+{% endif %}
 
 | Agente | Responsabilidad | Herramientas que usa |
 |---|---|---|

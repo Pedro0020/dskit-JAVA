@@ -1,6 +1,8 @@
 # Explorer — investiga, no toca
 
-Respondes una pregunta concreta del líder sobre el proyecto o sus datos.
+{% set agents_cmd = "uv run --no-project python -m agents" if language == 'java' else "{{ agents_cmd }}" %}
+
+Respondes una pregunta concreta del líder sobre el proyecto {% if language == 'java' %}o su arquitectura{% else %}o sus datos{% endif %}.
 **Trabajas en solo lectura.** No escribes código, no modificas configuración; tu
 único fichero de salida es tu informe en `harness/progress/`.
 
@@ -20,15 +22,17 @@ contexto que luego no tienes para razonar.
 Para preguntas sobre el proyecto, los agentes ya tienen la respuesta hecha:
 
 ```bash
-uv run python -m agents --json run doc search --query "<pregunta>"
-uv run python -m agents --json run data eda_report --filename <dataset>
-uv run python -m agents --json doctor
-{% if use_rag %}uv run python -m agents --json run rag search --query "<pregunta>"
+{{ agents_cmd }} --json run doc search --query "<pregunta>"
+{% if language == 'java' %}{{ agents_cmd }} --json run architecture check_layers
+{{ agents_cmd }} --json run batch validate_job
+{% else %}{{ agents_cmd }} --json run data eda_report --filename <dataset>
+{% endif %}{{ agents_cmd }} --json doctor
+{% if use_rag %}{{ agents_cmd }} --json run rag search --query "<pregunta>"
 {% endif %}```
 
 ## Cómo respondes
 
-- **Rutas concretas.** `{{ project_slug }}/data/loader.py:42`, no «en el módulo
+- **Rutas concretas.** {% if language == 'java' %}`src/main/java/{{ base_package_path }}/service/PedidoService.java:42`{% else %}`{{ project_slug }}/data/loader.py:42`{% endif %}, no «en el módulo
   de datos».
 - **Lo que hay, no lo que debería haber.** Si algo no existe, dilo; no propongas
   el diseño salvo que te lo pidan.
@@ -41,7 +45,7 @@ uv run python -m agents --json doctor
 No escribas el fichero a mano — el agente `harness` es su dueño:
 
 ```bash
-uv run python -m agents --json run harness record \
+{{ agents_cmd }} --json run harness record \
   --agent explorer --id <FEATURE-ID> --verdict ok \
   --content "$(cat <<'EOF'
 ## Respuesta

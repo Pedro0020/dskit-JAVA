@@ -118,11 +118,19 @@ else
   fail "jdk" "Java $JAVA_MAJOR < {{ java_version }} — el proyecto requiere {{ java_version }}+"
 fi
 
+{% if build_tool == 'maven' %}
 if [ -f "./mvnw" ]; then
   ok "mvnw" "wrapper presente"
 else
   fail "mvnw" "falta ./mvnw — genera el wrapper con 'mvn wrapper:wrapper'"
 fi
+{% else %}
+if [ -f "./gradlew" ] && [ -f "./gradle/wrapper/gradle-wrapper.jar" ]; then
+  ok "gradlew" "wrapper presente"
+else
+  fail "gradlew" "falta el wrapper de Gradle (./gradlew + gradle/wrapper/gradle-wrapper.jar)"
+fi
+{% endif %}
 {% endif %}
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -324,11 +332,19 @@ else
   fail "src/main/java" "falta el código fuente Java (src/main/java/)"
 fi
 
+{% if build_tool == 'maven' %}
 if [ -f "pom.xml" ]; then
   ok "pom.xml" "presente"
 else
   fail "pom.xml" "falta pom.xml"
 fi
+{% else %}
+if [ -f "build.gradle" ]; then
+  ok "build.gradle" "presente"
+else
+  fail "build.gradle" "falta build.gradle"
+fi
+{% endif %}
 
 if [ -d "src/test/java" ]; then
   TEST_COUNT="$(find src/test/java -name '*Test.java' -o -name '*Tests.java' 2>/dev/null | wc -l | tr -d ' ')"
@@ -365,17 +381,26 @@ else
 fi
 {% else %}
 if [ "$QUICK" -eq 1 ]; then
-  warn "mvnw verify" "omitido (--quick) — NO declares ninguna feature como done sin esto"
+  warn "{% if build_tool == 'maven' %}mvnw verify{% else %}gradlew build{% endif %}" "omitido (--quick) — NO declares ninguna feature como done sin esto"
 elif [ "$ERRORS" -gt 0 ]; then
-  warn "mvnw verify" "omitido — hay errores estructurales que arreglar antes"
+  warn "{% if build_tool == 'maven' %}mvnw verify{% else %}gradlew build{% endif %}" "omitido — hay errores estructurales que arreglar antes"
 else
   TEST_LOG="$(mktemp)"
+{% if build_tool == 'maven' %}
   if ./mvnw -q verify >"$TEST_LOG" 2>&1; then
     ok "mvnw verify" "build + tests en verde"
   else
     fail "mvnw verify" "$(grep -E '^\[ERROR\]|BUILD FAILURE' "$TEST_LOG" | head -3 | tr '\n' ' ' || echo 'el build falla')"
     [ "$JSON" -eq 1 ] || tail -15 "$TEST_LOG" | sed 's/^/      /'
   fi
+{% else %}
+  if ./gradlew -q build >"$TEST_LOG" 2>&1; then
+    ok "gradlew build" "build + tests en verde"
+  else
+    fail "gradlew build" "$(grep -E 'FAILURE|error:' "$TEST_LOG" | head -3 | tr '\n' ' ' || echo 'el build falla')"
+    [ "$JSON" -eq 1 ] || tail -15 "$TEST_LOG" | sed 's/^/      /'
+  fi
+{% endif %}
   rm -f "$TEST_LOG"
 fi
 {% endif %}

@@ -129,8 +129,15 @@ def _first_paragraph(texto: str) -> str:
     """La primera línea de prosa del prompt, para la `description` del subagente."""
     for linea in texto.splitlines():
         limpia = linea.strip()
-        if limpia and not limpia.startswith("#"):
-            return limpia.rstrip(".")
+        if not limpia or limpia.startswith("#"):
+            continue
+        # Las directivas de plantilla (set/if) no son prosa: en el template
+        # llevan Jinja y en un render han desaparecido — la description debe
+        # ser la misma en ambos. Los prefijos se construyen por concatenación:
+        # escribirlos literales en este fichero rompería el render de Jinja.
+        if limpia.startswith("{" + "%") or limpia.startswith("{" + "{"):
+            continue
+        return limpia.rstrip(".")
     return "Agente del arnés"
 
 

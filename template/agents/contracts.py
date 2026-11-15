@@ -409,19 +409,19 @@ CONTRACTS: dict[str, Contract] = {
         critical=("tag_release", "merge_branch"),
     ),
     "documentation": Contract(
-        role="Dueño de la documentación: CHANGELOG.md, README.md, docs/ y la versión del proyecto.",
+        role="Dueño de la documentación: CHANGELOG.md, README.md, docs/ y la versión del proyecto (pyproject.toml o pom.xml).",
         can=(
             "actualizar CHANGELOG.md (también entradas por-feature), detectar README ↔ Makefile desincronizados",
-            "bump_version en pyproject.toml + README, generar docs Sphinx",
+            "bump_version en pyproject.toml (Python) o pom.xml (Java) + README, generar docs Sphinx/Javadoc",
             "regenerar docs/prd.md (PRD vivo) desde references/00-objetivo.md, "
             "harness/featureslist.json y features/*.feature",
         ),
         cannot=(
             "hacer commit de lo que escribe → git",
-            "tocar la sección de dependencias de pyproject.toml → env",
+            "tocar la sección de dependencias de pyproject.toml/pom.xml → env",
         ),
         needs=("la nueva versión, para bump_version",),
-        owns=("CHANGELOG.md", "README.md", "docs/", "pyproject.toml (campo version)"),
+        owns=("CHANGELOG.md", "README.md", "docs/", "pyproject.toml/pom.xml (campo version)"),
         collaborates=("git",),
     ),
     "cicd": Contract(
@@ -453,14 +453,17 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=("cicd",),
     ),
     "env": Contract(
-        role="Dueño del entorno: versión de Python, uv sync/lock, dependencias declaradas.",
-        can=("verificar python, uv sync, uv lock --check, añadir dependencias con uv add",),
+        role="Dueño del entorno: versión de Python/JDK, sync de dependencias y lock/wrapper.",
+        can=(
+            "verificar python, uv sync, uv lock --check, añadir dependencias con uv add",
+            "en Java: verificar JDK y wrapper, resolver dependencias con ./mvnw dependency:go-offline",
+        ),
         cannot=(
             "juzgar si una dependencia está obsoleta o es vulnerable → dependency",
-            "tocar la versión del proyecto en pyproject.toml → documentation",
+            "tocar la versión del proyecto en pyproject.toml/pom.xml → documentation",
         ),
         needs=("el nombre del paquete, para añadir una dependencia",),
-        owns=("uv.lock", ".venv/", "pyproject.toml (dependencias)"),
+        owns=("uv.lock", ".venv/", "pyproject.toml (dependencias)", "pom.xml (dependencias)"),
         collaborates=("dependency",),
     ),
     "dependency": Contract(
@@ -542,16 +545,20 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=("secrets",),
     ),
     "architecture": Contract(
-        role="Dueño de la arquitectura (ArchUnit): límites de capas, dependencias y ciclos.",
+        role="Dueño de la arquitectura (ArchUnit) y de la memoria estructural: límites de capas, dependencias, ciclos y el vault Java (IA_index, dominios, grafo).",
         can=(
             "detectar estáticamente violaciones de capas (controller→repository directo)",
             "verificar que existe el test ArchUnit del template y ejecutarlo",
+            "regenerar el vault determinista (docs/vault/) desde el código: paquetes, capas, jobs, migraciones, endpoints y grafo (JAVA-016)",
+            "enriquecer el vault con la capa semántica de graphify (use_graphify=true, requiere GEMINI_API_KEY)",
         ),
         cannot=(
             "modificar código para arreglar la violación — reporta, el implementer decide",
             "definir las reglas de negocio — las capas las fija el template",
+            "hacer depender el gate o el grafo estructural de un LLM — el núcleo es determinista",
         ),
-        collaborates=("test",),
+        owns=("docs/vault/",),
+        collaborates=("test", "doc"),
     ),
     "ops": Contract(
         role="Dueño de la observabilidad: Actuator, Micrometer/Prometheus, logging con traceId y métricas de batch.",

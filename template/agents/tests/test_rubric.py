@@ -51,3 +51,39 @@ def test_la_puerta_es_mas_pequena_que_la_revision():
 def test_las_categorias_de_decision_no_estan_vacias():
     assert CATEGORIAS_DECISION, "sin categorías no hay registro de decisiones"
     assert all(isinstance(c, str) and c for c in CATEGORIAS_DECISION)
+
+
+# -- capa Java (JAVA-014a) -----------------------------------------------------
+
+
+def test_rubrica_java_incluye_criterios_de_dominio():
+    from agents.rubric import criterios_revision
+
+    java = criterios_revision("java")
+    ids = {c[0] for c in java}
+    for esperado in ("R-J1", "R-J2", "R-J3", "R-J4", "R-J5"):
+        assert esperado in ids, f"falta el criterio Java {esperado}"
+
+
+def test_rubrica_python_no_incluye_criterios_java():
+    from agents.rubric import criterios_revision
+
+    assert criterios_revision("python") == CRITERIOS_REVISION
+    assert not any(c[0].startswith("R-J") for c in criterios_revision("python"))
+
+
+def test_rubrica_java_conserva_la_base_y_no_repite_ids():
+    from agents.rubric import criterios_revision
+
+    java = criterios_revision("java")
+    ids = [c[0] for c in java]
+    assert set(c[0] for c in CRITERIOS_REVISION).issubset(ids)
+    assert len(ids) == len(set(ids)), "un id duplicado rompe la trazabilidad"
+
+
+def test_criterios_java_son_preguntas_binarias():
+    from agents.rubric import CRITERIOS_REVISION_JAVA
+
+    for cid, pregunta in CRITERIOS_REVISION_JAVA:
+        assert cid.startswith("R-J"), f"'{cid}': prefijo de dominio incorrecto"
+        assert "?" in pregunta, f"'{cid}': un criterio que no es pregunta no es rúbrica"

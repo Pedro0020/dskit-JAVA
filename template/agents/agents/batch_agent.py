@@ -142,6 +142,24 @@ class BatchAgent(BaseAgent):
             "message": "hay steps con chunk/tasklet" if has_step else "no se ven steps (chunk/tasklet)",
         })
 
+        # 4. Chunk steps con transaction manager (writer dentro de transacción).
+        # El caso canónico de rechazo del reviewer: un writer que corre fuera de
+        # transacción. Si el fichero declara steps chunk y no menciona el
+        # PlatformTransactionManager, es la señal a revisar (JAVA-014b).
+        chunk_sin_tx = [
+            str(f.relative_to(self.ctx.root))
+            for f in files
+            if ".chunk(" in (texto := f.read_text(encoding="utf-8", errors="replace"))
+            and "transactionmanager" not in texto.lower()
+        ]
+        checks.append({
+            "id": "transacciones",
+            "ok": not chunk_sin_tx,
+            "message": "chunk steps con transaction manager"
+            if not chunk_sin_tx
+            else f"chunk step sin transaction manager: {', '.join(chunk_sin_tx)}",
+        })
+
         ok = all(c["ok"] for c in checks)
         warnings = [c["message"] for c in checks if not c["ok"]]
         return AgentResult(

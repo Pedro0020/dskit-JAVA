@@ -60,6 +60,32 @@ CRITERIOS_REVISION: tuple[tuple[str, str], ...] = (
     ("R-6", "¿No hay secretos ni rutas absolutas? (agents run secrets scan)"),
 )
 
+#: Criterios de REVISIÓN para proyectos Java: la capa de gobierno que el
+#: arnés exige a un servicio Spring Boot/Spring Batch (JAVA-014a). Se suman a
+#: CRITERIOS_REVISION cuando `language == 'java'` — ver `criterios_revision()`.
+#: Crecen por ttsr: solo entran reglas nacidas de un fallo real.
+CRITERIOS_REVISION_JAVA: tuple[tuple[str, str], ...] = (
+    ("R-J1", "¿Las transacciones tienen límites explícitos? (@Transactional en el service, no en el controller; sin auto-invocación)"),
+    ("R-J2", "¿El batch es idempotente y reiniciable? (relanzar con los mismos parámetros no duplica; init.sh valida el job)"),
+    ("R-J3", "¿Hay N+1? (las colecciones usan fetch/join explícito, no lazy en bucle)"),
+    ("R-J4", "¿La API está versionada y validada? (/api/v1, Bean Validation, @ControllerAdvice)"),
+    ("R-J5", "¿Los records/DTOs son inmutables? (sin setters ni estado mutable)"),
+)
+
+
+def criterios_revision(language: str = "python") -> tuple[tuple[str, str], ...]:
+    """
+    La checklist de revisión según el lenguaje del proyecto.
+
+    Python hereda la rúbrica base (R-1..R-6); Java suma la capa de dominio
+    (R-J1..R-J5). La puerta (GATE-1..4) no cambia: `init.sh` ya ejecuta
+    `./mvnw verify` en Java, que es la evidencia real.
+    """
+    if str(language).lower() == "java":
+        return CRITERIOS_REVISION + CRITERIOS_REVISION_JAVA
+    return CRITERIOS_REVISION
+
+
 #: Categorías de decisión de criterio. No son irreversibles — configuran el
 #: proyecto (qué librería, cómo se diseña, qué enfoque) —, así que la regla no
 #: es bloquear sino REGISTRAR: al cerrar, `harness finish --decisions` las
