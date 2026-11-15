@@ -1,226 +1,454 @@
-# DSKIT-JAVA
+# dskit-JAVA
 
-**Template copier para proyectos Java (Spring Boot / Spring Batch) con arnés de IA.**
+Template y arnés de desarrollo para proyectos **Java con Spring Boot y Spring
+Batch**. Puede:
 
-Fork de [dskit](https://github.com/cacelass/dskit) centrado en desarrollo Java.
-El arnés —la capa que gobierna cómo trabajan los agentes sobre el proyecto— se
-mantiene intacto: puerta de entrada, backlog verificable y una definición de
-«hecho» que se aplica en código, no pidiéndosela al modelo.
+- crear un proyecto nuevo con Maven o Gradle;
+- incorporar el arnés a un proyecto Java existente sin reemplazar su código;
+- gobernar el trabajo de agentes de IA con backlog, permisos, revisión y
+  evidencia verificable;
+- aplicar controles específicos para APIs, jobs batch, migraciones, seguridad,
+  arquitectura y observabilidad.
 
-![version](https://img.shields.io/badge/dskit-2.0.0-blue)
-![CI](https://github.com/Pedro0020/dskit-JAVA/actions/workflows/ci.yml/badge.svg)
-[![based on dskit](https://img.shields.io/badge/based_on-dskit_by_cacelass-blueviolet)](https://github.com/cacelass/dskit)
-![license](https://img.shields.io/badge/license-Apache--2.0-green)
+[![CI](https://github.com/Pedro0020/dskit-JAVA/actions/workflows/ci.yml/badge.svg)](https://github.com/Pedro0020/dskit-JAVA/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 
-> **Fork de [dskit](https://github.com/cacelass/dskit)** — repo original:
-> `https://github.com/cacelass/dskit` — creado por
-> [cacelass](https://github.com/cacelass) y publicado bajo Apache-2.0.
-> Ver [CREDITS.md](CREDITS.md) y [Créditos y origen](#créditos-y-origen).
+> dskit no es un chatbot ni sustituye al equipo. Es un plano de control que
+> hace que el trabajo propuesto por agentes deje rastros y pase verificaciones
+> reproducibles.
 
----
+## ¿Qué problema resuelve?
 
-## Índice
+Un asistente puede escribir código que parece correcto y aun así dejar:
 
-- [Requisitos](#requisitos)
-- [Inicio rápido](#inicio-rápido)
-- [Variables](#variables)
-- [Estructura generada](#estructura-generada)
-- [El arnés](#el-arnés)
-- [Make targets](#make-targets)
-- [Estado de la adaptación](#estado-de-la-adaptación)
-- [Créditos y origen](#créditos-y-origen)
-- [License](#license)
+- un job batch no reiniciable;
+- una migración incompatible con producción;
+- endpoints sin protección;
+- dependencias entre capas no deseadas;
+- tests que cubren líneas, pero no comportamiento.
 
-## Requisitos
+dskit añade una puerta técnica (`init.sh`), un backlog con criterios de
+aceptación, agentes especializados y una definición de `done` que exige
+evidencia real.
 
-- **JDK 17+** (la plantilla admite 17, 21 y 25; elige `java_version`).
-- **copier** para generar el proyecto: `pip install copier`.
-- **uv** y **Python 3.10+** para el plano de control del arnés (los agentes
-  son herramientas de desarrollo, no forman parte del artefacto Java).
-- **Bash** (Git Bash o WSL en Windows) para ejecutar `./init.sh`.
-- **Docker** opcional, solo si activas `use_testcontainers`.
+## Cómo está construido: capas y responsabilidades
 
-## Inicio rápido
+La idea central es separar **el producto Java** de **las herramientas que
+gobiernan su desarrollo**. Esta separación permite usar dskit tanto para crear
+una aplicación nueva como para incorporarlo a una aplicación que ya existe.
 
-```bash
-# Interactivo: responde language=java y las preguntas Java
-copier copy --trust gh:Pedro0020/dskit-JAVA mi_proyecto
-
-# No interactivo (perfil estandar: Spring Batch + H2 + Flyway)
-copier copy --trust --defaults --data language=java gh:Pedro0020/dskit-JAVA mi_proyecto
-cd mi_proyecto
-./mvnw verify        # build + tests
-./init.sh            # la puerta del arnés
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Asistente de IA                                             │
+│ .opencode/agents/ · .claude/agents/                         │
+│ Decide qué investigar, implementar o revisar                 │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ delega acciones
+┌──────────────────────────────▼──────────────────────────────┐
+│ Plano de control                                             │
+│ agents/                                                      │
+│ Ejecuta comandos deterministas, aplica permisos y contratos  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ lee y actualiza
+┌──────────────────────────────▼──────────────────────────────┐
+│ Gobierno del trabajo                                         │
+│ harness/ · init.sh                                           │
+│ Backlog, estado, evidencia y puerta de calidad               │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ verifica
+┌──────────────────────────────▼──────────────────────────────┐
+│ Producto                                                     │
+│ src/ · pom.xml/build.gradle · src/test/                      │
+│ Código Java, configuración, tests y dependencias             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-Desde una copia local del repo:
+### 1. Código de aplicación: `src/`
+
+Es el producto que el equipo quiere construir y operar. dskit no decide su
+modelo de dominio ni lo sustituye:
+
+| Ruta | Función | Por qué existe |
+|---|---|---|
+| `src/main/java/` | Código Java de producción | Contiene casos de uso, controllers, servicios, repositorios, jobs y configuración |
+| `src/main/resources/` | `application.yml`, perfiles y migraciones | Separa configuración y esquema de base de datos del código |
+| `src/test/java/` | Tests unitarios, de integración y de contexto | Demuestra que el comportamiento funciona, no solo que compila |
+| `src/test/resources/` | Configuración aislada de tests | Evita que una prueba use accidentalmente recursos de producción |
+
+En un proyecto web, el flujo habitual es `controller → service →
+repository`. En un proyecto Batch, el flujo es `job → step → reader /
+processor / writer`. En un proyecto web + Batch conviven ambos, pero deben
+compartir el dominio sin mezclar responsabilidades.
+
+### 2. Build y dependencias: `pom.xml` o `build.gradle`
+
+El build es la fuente de verdad del proyecto Java:
+
+- declara Spring Boot, Spring Batch y las librerías del dominio;
+- compila el código;
+- ejecuta los tests;
+- aplica formato, cobertura y análisis estático;
+- genera artefactos reproducibles.
+
+Los wrappers (`mvnw` o `gradlew`) fijan la versión de la herramienta. Por eso
+se usan en CI y en `init.sh`: el resultado no depende de lo que tenga instalado
+globalmente cada desarrollador.
+
+`Makefile` no reemplaza al build. Es una fachada con nombres fáciles de
+recordar (`make test`, `make verify`, `make security`) que delega el trabajo en
+Maven, Gradle o en un agente concreto.
+
+### 3. Puerta de entrada: `init.sh`
+
+`init.sh` es el punto de control antes de que un agente empiece a modificar el
+proyecto. Comprueba, en este orden:
+
+1. que Python y `uv` están disponibles para el plano de control;
+2. que existe el JDK requerido;
+3. que existe el wrapper de Maven o Gradle;
+4. que están los ficheros mínimos del arnés;
+5. que el backlog es válido;
+6. que existe código y al menos un test Java;
+7. que el build completo termina correctamente.
 
 ```bash
-copier copy --trust ./dskit-JAVA mi_proyecto
+./init.sh          # comprobación completa
+./init.sh --quick  # estructura, sin ejecutar el build
+./init.sh --json   # resultado para herramientas y agentes
 ```
 
-### Adoptar un proyecto Java existente
+`--quick` sirve para diagnosticar estructura, pero no es suficiente para cerrar
+una feature. La regla importante es: **si la puerta falla, el agente no debe
+seguir implementando sobre un proyecto roto**.
 
-El modo adopción instala únicamente el arnés; no genera ni reemplaza el
-`src/`, el `pom.xml`, el `build.gradle` ni los wrappers de la aplicación.
-Funciona con los tres stacks: `spring-boot` (web/API),
-`spring-boot-batch` (batch) y `spring-boot-web+batch` (ambos).
+### 4. Gobierno del trabajo: `harness/`
+
+`harness/` contiene el estado de trabajo, no el código de negocio:
+
+| Fichero | Contenido | Uso |
+|---|---|---|
+| `featureslist.json` | Backlog, dependencias, criterios y estados | Define qué se puede hacer después |
+| `progress/current.md` | Feature activa | Permite retomar trabajo interrumpido |
+| `progress/history.md` | Historial append-only | Conserva decisiones y evidencia de cierres |
+| `progress/<agente>-<id>.md` | Informes de agentes | Evita depender de la memoria de una conversación |
+| `memory.md` | Memoria operativa del proyecto | Guarda contexto estable para el arnés |
+
+El backlog es útil porque convierte “mejora la aplicación” en una tarea
+verificable: “el endpoint devuelve 400 para un payload inválido” o “relanzar el
+job no duplica filas”.
+
+El ciclo se ejecuta con el agente `harness`:
 
 ```bash
-python tools/adopt.py ./mi-proyecto --dry-run
-python tools/adopt.py ./mi-proyecto
+uv run --no-project python -m agents --json run harness next
+uv run --no-project python -m agents --json run harness start --id VERIFY-001
+uv run --no-project python -m agents --json run harness status
 ```
 
-La detección inspecciona el build, Java, paquete base, stack, base de datos y
-migraciones, y exige confirmar explícitamente lo que no pueda detectar.
-Antes de adoptar, el proyecto debe compilar y tener tests en verde. En
-proyectos con `Makefile` propio, los targets del arnés están en `dskit.mk`:
+Solo `harness` debe escribir el backlog y el progreso. Así se evita que un
+agente cambie el estado manualmente para aparentar que una tarea está
+terminada.
+
+### 5. Plano de control ejecutable: `agents/`
+
+`agents/` contiene Python, pero no es la aplicación Java. Es la capa que
+ejecuta operaciones repetibles sobre ella:
+
+```text
+agents/
+├── agents/       implementaciones de agentes
+├── tools/        operaciones pequeñas y deterministas
+├── core/         ciclo común y registro
+├── evals/        pruebas del propio arnés
+├── prompts/      skills y workflows
+├── contracts.py  dueño, rutas permitidas y acciones
+├── permissions.py política de confirmaciones
+├── context.py    rutas y configuración del proyecto
+└── cli.py        interfaz de comandos
+```
+
+Cada agente tiene una responsabilidad concreta. Por ejemplo:
+
+- `test` ejecuta y analiza tests;
+- `dependency` revisa dependencias;
+- `migrations` inspecciona Flyway/Liquibase;
+- `batch` revisa jobs y restartability;
+- `security` revisa exposición y configuración de seguridad;
+- `architecture` aplica reglas de capas y construye el vault;
+- `ops` revisa health, métricas y trazas.
+
+La forma general de uso es:
+
+```bash
+uv run --no-project python -m agents list
+uv run --no-project python -m agents describe migrations
+uv run --no-project python -m agents --json run migrations validate
+```
+
+El resultado estructurado (`--json`) permite que otro agente lo consuma sin
+tener que interpretar texto libre.
+
+### 6. Agentes de razonamiento: `.opencode/` y `.claude/`
+
+Estos directorios contienen instrucciones en Markdown para asistentes:
+
+- `lider`: coordina el ciclo y decide qué agente debe actuar;
+- `explorer`: investiga sin modificar código;
+- `implementer`: implementa una feature y sus tests;
+- `reviewer`: revisa diff, criterios y evidencia.
+
+No son los ejecutores de seguridad. Un prompt puede proponer una acción, pero
+la acción real pasa por `agents/`, contratos y permisos. Esta separación es
+importante porque un modelo puede equivocarse o interpretar mal una
+instrucción; el código determinista sigue siendo la última autoridad.
+
+`make assistants-sync` mantiene los espejos para otros asistentes, y
+`make skills` copia los workflows disponibles a `.opencode/skills/`.
+
+### 7. Calidad por dominio
+
+Los agentes Java existen porque un test genérico no detecta todos los fallos
+importantes:
+
+| Capa | Qué protege | Ejemplo de fallo que busca |
+|---|---|---|
+| API | Contrato HTTP | Cambiar una respuesta o aceptar datos inválidos sin detectarlo |
+| Batch | Semántica operacional | Job no reiniciable, writer no idempotente o chunk sin transacción |
+| Migrations | Evolución de datos | Editar una migración ya aplicada o romper checksums |
+| Security | Frontera de confianza | Actuator público, JWT mal configurado o CORS excesivo |
+| Architecture | Dependencias internas | Controller accediendo directamente al repository |
+| Ops | Operación en producción | Servicio sin health real, métricas o `traceId` |
+
+La finalidad no es añadir burocracia: es revisar los fallos que suelen aparecer
+después de desplegar, cuando corregirlos es más caro.
+
+### 8. Memoria y conocimiento
+
+Hay tres memorias con funciones distintas:
+
+- `harness/progress/`: qué trabajo está ocurriendo ahora;
+- `agents/workspace/`: artefactos temporales de los agentes;
+- `docs/vault/`: conocimiento estable de la arquitectura y los dominios.
+
+`make knowledge` regenera el vault estructural a partir del código. Si se
+activa RAG, `make index-rag` permite buscar sobre código, documentación, vault
+e histórico. El RAG ayuda a encontrar información; no concede permisos ni
+convierte contenido externo en instrucciones.
+
+### 9. Seguridad y permisos
+
+Los agentes clasifican acciones por riesgo:
+
+- acciones reversibles: se ejecutan directamente;
+- acciones destructivas: requieren confirmación;
+- acciones críticas: requieren confirmar el objetivo exacto.
+
+`policy_guard.py` añade una protección frente a comandos peligrosos del
+asistente, como borrar fuera del proyecto, leer credenciales o hacer
+`git push`. No es un sandbox: el aislamiento real debe proporcionarlo el
+entorno de ejecución.
+
+### 10. CI
+
+`.github/workflows/ci.yml` valida dos cosas diferentes:
+
+1. el template genera archivos sintácticamente válidos en sus combinaciones;
+2. proyectos Java reales pasan build, tests, puerta y evals del arnés.
+
+También se prueban ejemplos de adopción web y Batch. Esto evita que una
+modificación del template funcione para un proyecto nuevo y rompa el caso de
+uso más importante: incorporarlo a un proyecto existente.
+
+## Dos formas de usarlo
+
+### 1. Crear un proyecto nuevo
+
+Requisitos:
+
+- JDK 17, 21 o 25;
+- Python 3.10+ y [uv](https://docs.astral.sh/uv/) para el arnés;
+- [Copier](https://copier.readthedocs.io/);
+- Bash (Git Bash o WSL en Windows);
+- Docker solo para Testcontainers u otros servicios que lo requieran.
+
+```bash
+pip install copier
+copier copy --trust gh:Pedro0020/dskit-JAVA mi-proyecto
+cd mi-proyecto
+
+./mvnw verify       # Maven
+# o ./gradlew build # Gradle
+./init.sh
+```
+
+El perfil interactivo permite elegir:
+
+| Opción | Valores |
+|---|---|
+| Build | Maven o Gradle |
+| Stack | Spring Boot web, Spring Batch o web + Batch |
+| Java | 17, 21 o 25 |
+| Base de datos | H2, PostgreSQL, MySQL o ninguna |
+| Migraciones | Flyway, Liquibase o ninguna |
+| Extras | seguridad, Testcontainers, PIT, ArchUnit, observabilidad, RAG y SDD |
+
+### 2. Adoptar un proyecto existente
+
+Esta es la opción adecuada si ya tienes una aplicación Spring Boot o Spring
+Batch y no quieres regenerarla. El adoptador instala el plano de control, pero
+deja intactos:
+
+```text
+src/
+pom.xml o build.gradle
+mvnw / gradlew
+tests y configuración de la aplicación
+```
+
+Clona dskit y ejecuta:
+
+```bash
+git clone https://github.com/Pedro0020/dskit-JAVA.git
+cd dskit-JAVA
+
+uv run python tools/adopt.py /ruta/a/mi-proyecto --dry-run
+uv run python tools/adopt.py /ruta/a/mi-proyecto
+```
+
+Detecta Maven/Gradle, versión de Java, paquete base, stack web/batch, base de
+datos y migraciones. Si algo no puede detectarse, hay que proporcionarlo
+explícitamente:
+
+```bash
+uv run python tools/adopt.py mi-proyecto \
+  --java-version 21 \
+  --base-package com.empresa.pedidos \
+  --framework spring-boot-web+batch
+```
+
+El proyecto debe compilar y tener tests en verde antes de adoptarlo. Si ya
+tiene un `Makefile`, los targets de dskit quedan separados en `dskit.mk`:
 
 ```make
 include dskit.mk
 ```
 
-La adopción escribe `.copier-answers.yml` para que el arnés sepa que el
-proyecto es Java y para permitir futuras actualizaciones controladas.
+La adopción crea `.copier-answers.yml`, conserva el build existente y genera un
+backlog de adopción adecuado al stack:
 
-## Variables
+- `JOB-001` para proyectos con Spring Batch;
+- `API-001` para proyectos web;
+- ambos cuando el proyecto combina web y Batch.
 
-| Variable | Valores | Descripción |
-|---|---|---|
-| `language` | `python` · `java` | `java` genera el árbol Spring Boot / Spring Batch |
-| `project_name` | texto | Nombre del proyecto |
-| `project_slug` | `[a-z0-9_]` | Nombre del artefacto / paquete |
-| `base_package` | `com.empresa.proyecto` | Paquete base Java |
-| `java_version` | `17` · `21` · `25` | Versión de Java (LTS) |
-| `build_tool` | `maven` · `gradle` | Build tool con wrapper (JAVA-001b: Gradle verificado para build/test/cobertura/formato) |
-| `framework` | `spring-boot` · `spring-boot-batch` · `spring-boot-web+batch` | Stack Spring |
-| `db` | `h2` · `postgres` · `mysql` · `none` | Base de datos |
-| `migrations` | `flyway` · `liquibase` · `none` | Migraciones de esquema |
-| `use_security` | bool | Spring Security |
-| `use_testcontainers` | bool | Tests de integración con contenedores |
-| `use_pit` | bool | Mutation testing con PIT (`make mutation`) |
-| `use_archunit` | bool | Tests de arquitectura ArchUnit (`make verify`) |
-| `use_observability` | bool | Actuator + Micrometer + Prometheus |
-| `proyecto_perfil` | `minimo` · `estandar` · `completo` · `manual` | Fija los defaults |
+## El arnés de desarrollo
 
-El perfil `estandar` activa `spring-boot-batch`, H2, Flyway, Testcontainers,
-PIT y ArchUnit. En `minimo`/`estandar` no se instalan dependencias al generar
-el proyecto: el primer paso es `./mvnw verify`.
+El flujo básico es:
 
-## Estructura generada
-
-```
-mi_proyecto/
-├── pom.xml
-├── mvnw · mvnw.cmd · .mvn/
-├── src/main/java/<paquete>/
-│   ├── Application.java
-│   └── batch/DemoJobConfig.java      (si el framework incluye batch)
-├── src/main/resources/
-│   ├── application.yml
-│   └── db/migration/ | db/changelog/ (si hay migraciones)
-├── src/test/java/<paquete>/ApplicationTests.java
-├── src/test/resources/application-test.yml
-├── harness/                          backlog + progreso del arnés
-├── agents/                           plano de control (Python)
-├── .opencode/agents/                 lider · explorer · implementer · reviewer
-├── init.sh                           la puerta
-└── Makefile                          fachada sobre ./mvnw
+```text
+init.sh → backlog → explorar → implementar → revisar → evidencia → done
 ```
 
-## El arnés
-
-La regla que no se salta: **ninguna feature se marca `done` sin que
-`./init.sh` pase en verde y sin evidencia real del comando que lo demuestra**.
-No es una instrucción en un prompt: la aplica `harness finish` en Python.
-
-```
-./init.sh → harness/progress/ → harness/featureslist.json → implementar → revisar → done
-```
-
-- **`init.sh`** — JDK, wrapper de Maven, `./mvnw verify` y el test
-  `contextLoads()` (el ApplicationContext tiene que arrancar).
-- **`harness/featureslist.json`** — backlog con criterios verificables.
-- **`.opencode/agents/`** — los cuatro agentes que razonan (markdown).
-- **`agents/`** — los agentes que ejecutan (Python, plano de control).
+Antes de empezar:
 
 ```bash
-make init            # ./init.sh
-make backlog         # estado del backlog
-make agents-list     # agentes disponibles
-make agents-eval     # harness + contracts
+./init.sh
 ```
 
-## Make targets (del proyecto generado)
+Si la puerta falla, el agente debe parar. Para consultar el proyecto:
 
-| Target | Qué hace |
+```bash
+make backlog
+make agents-list
+make agents-doctor
+make agents-eval
+```
+
+Una feature solo puede marcarse como `done` cuando:
+
+1. `init.sh` termina correctamente;
+2. los criterios de aceptación están satisfechos;
+3. existe salida real de los comandos de verificación;
+4. el reviewer no la ha rechazado;
+5. el cierre queda registrado en `harness/progress/history.md`.
+
+## Agentes disponibles
+
+### Núcleo
+
+`harness`, `git`, `test`, `review`, `doctor`, `plan`, `env`, `cicd`, `make`,
+`doc`, `documentation`, `dependency`, `secrets` y `memory`.
+
+### Dominios Java
+
+| Agente | Responsabilidad |
 |---|---|
-| `make setup` | resuelve dependencias (`dependency:go-offline`) |
-| `make init` | ejecuta la puerta `./init.sh` |
-| `make test` | `./mvnw test` |
-| `make verify` | `./mvnw verify` |
-| `make check` | `verify` + puerta |
-| `make compile` | `./mvnw -q compile` |
-| `make backlog` | estado de `harness/featureslist.json` |
-| `make agents-list` | lista los agentes del plano de control |
-| `make agents-doctor` | diagnóstico del arnés |
-| `make agents-eval` | harness + contracts |
-| `make prompts-sync` | regenera prompts desde el código y los contratos |
-| `make prompts-check` | falla si un prompt se desincronizó |
-| `make skills` | instala los prompts como skills en `.opencode/skills/` |
-| `make assistants-sync` | espeja los subagentes a `.claude/agents/` |
-| `make clean` | `./mvnw clean` |
+| `api` | Controllers, DTOs, validación, versionado y errores HTTP |
+| `batch` | Jobs, chunks, transacciones, reintentos, idempotencia y restartability |
+| `migrations` | Flyway/Liquibase, orden, checksum y rollback |
+| `security` | Spring Security, JWT/CORS y exposición de Actuator |
+| `architecture` | Capas, ciclos y reglas ArchUnit |
+| `ops` | Health checks, métricas, trazas y observabilidad |
 
-## Estado de la adaptación
+### Extras opcionales
 
-| Feature | Estado |
+- `rag`: búsqueda sobre código, documentación, vault e histórico;
+- `mutation`: PIT y métrica CRAP para comprobar la calidad de los tests;
+- `graphify`: enriquecimiento semántico opcional del vault.
+
+Lista los agentes realmente instalados con:
+
+```bash
+uv run --no-project python -m agents list
+uv run --no-project python -m agents describe batch
+```
+
+## Comandos habituales
+
+| Comando | Uso |
 |---|---|
-| JAVA-001 — template Java (Maven, Spring Boot/Batch, H2, Flyway, wrapper) | Hecha |
-| JAVA-001b — Gradle (fase 1: build/test/cobertura/formato) | Hecha |
-| JAVA-002 — puerta `./mvnw verify` + `contextLoads` | Hecha |
-| JAVA-003 — backlog semilla Java | Hecha |
-| JAVA-004 — prompts Java (lider/explorer/implementer/reviewer) y docs coherentes | Hecha |
-| JAVA-005a — agentes language-aware (commit/doctor/env) | Hecha |
-| JAVA-005b — reescritura JVM de test/dependency/cicd/make/doc/plan + poda data/ml/mlflow/notebook | Hecha |
-| JAVA-006..011 — dominios Java: batch, migrations, security, api Spring, architecture (ArchUnit), ops/observabilidad | Hecha |
-| JAVA-012 — pipeline de calidad JVM: JaCoCo + Spotless + PIT + Error Prone/NullAway + Trivy/SBOM | Hecha |
-| JAVA-013 — CI del template Java (matriz JDK, evals del arnés, SBOM+Trivy) + `smoke-java` | Hecha |
-| JAVA-014 — rúbrica Java: R-criterios R-J1..R-J5 + test de actuator exposure + casos canónicos | Hecha |
-| JAVA-015 — DX: IntelliJ/Spotless, DevTools documentado, fricción PR | Hecha |
-| JAVA-016 — memoria estructural: vault determinista + grafo + graphify opcional | Hecha |
+| `./init.sh` | Comprueba entorno, arnés, build y tests |
+| `make test` | Ejecuta tests |
+| `make verify` | Build completo, formato y cobertura |
+| `make check` | Build más puerta del arnés |
+| `make lint` | Spotless y PMD |
+| `make typecheck` | Error Prone y NullAway en Maven |
+| `make security` | Trivy y SBOM |
+| `make mutation TARGET=...` | Mutation testing con PIT |
+| `make batch-run JOB=...` | Ejecuta un job Batch |
+| `make migrations` | Consulta el estado de migraciones |
+| `make context-check` | Comprueba el ApplicationContext |
+| `make knowledge` | Regenera `docs/vault/` |
+| `make index-rag` | Indexa el proyecto en el RAG |
 
-Alcance y criterios: [SPEC-JAVA.md](SPEC-JAVA.md) · estado y prioridades:
-[ROADMAP.md](ROADMAP.md).
+Los targets dependen del build seleccionado. Gradle tiene verificados
+build, tests, cobertura y formato; algunas comprobaciones avanzadas siguen
+siendo específicas de Maven.
 
-**Esta versión es Java-only:** el árbol Python original del template se
-eliminó (decisión en ROADMAP) — `language: python` ya no está disponible y los
-agentes DS/ML (data, ml, mlflow, notebook) tampoco. El plano de control del
-arnés sigue siendo Python (necesita `uv`) porque es el foso de gobierno, no el
-proyecto.
+## Estructura de un proyecto generado
 
-**Verificado (renders limpios):** estandar Maven (JDK 17 y 21) → `./init.sh`
-verde; Gradle → `./gradlew build` verde; Postgres+security+observability →
-gate verde; `copier update` aplica cambios del template; evals del arnés
-**PASS**; proyecto integral (web+batch+security+observability+archunit) con
-todas las acciones de los agentes en verde.
+```text
+mi-proyecto/
+├── src/main/java/              código Java
+├── src/test/java/              tests
+├── src/main/resources/         configuración y migraciones
+├── agents/                     plano de control Python
+├── harness/                    backlog y progreso
+├── .opencode/agents/           agentes de razonamiento
+├── init.sh                     puerta de entrada
+├── Makefile                    fachada de comandos
+└── pom.xml o build.gradle      build de la aplicación
+```
 
-## Créditos y origen
+## Documentación
 
-Este proyecto es una **obra derivada** de [dskit](https://github.com/cacelass/dskit)
-—`https://github.com/cacelass/dskit`—, creado por
-[cacelass](https://github.com/cacelass) y publicado bajo Apache-2.0. Se
-conservan la licencia y el aviso de copyright de la obra original.
+- [AGENTS.md](AGENTS.md): protocolo operativo del arnés.
+- [CREDITS.md](CREDITS.md) y [NOTICE](NOTICE): origen y atribución.
+- [SECURITY.md](SECURITY.md): límites y recomendaciones de seguridad.
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribución al repositorio.
 
-Este fork se publica en
-**[https://github.com/Pedro0020/dskit-JAVA](https://github.com/Pedro0020/dskit-JAVA)**
-y está mantenido por **poganmart** desde 2026. Los cambios respecto al
-original se detallan en [NOTICE](NOTICE), [CREDITS.md](CREDITS.md) y
-[SPEC-JAVA.md](SPEC-JAVA.md).
+## Licencia y origen
 
-Si reutilizas este trabajo, mantén también la atribución a la obra original.
-
----
-
-## License
-
-Apache-2.0
+Apache-2.0. dskit-JAVA es una obra derivada de
+[dskit](https://github.com/cacelass/dskit), creado por `cacelass`. Se conservan
+la licencia y la atribución exigidas por el proyecto original. Consulta
+[CREDITS.md](CREDITS.md) y [NOTICE](NOTICE).

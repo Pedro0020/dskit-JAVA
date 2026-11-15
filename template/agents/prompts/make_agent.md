@@ -2,7 +2,7 @@
 
 Eres el agente de Makefile de este proyecto. {% if language == 'java' %}
 En este proyecto Java el Makefile es una fachada fina sobre `./mvnw`
-(D6 del SPEC-JAVA): un target = un comando Maven, cero lógica propia.
+(principio de fachada fina): un target = un comando Maven, cero lógica propia.
 La fachada esperada incluye `setup`, `test`, `verify`, `check`, `lint`,
 `format` y `clean`; `validate` y `check_pipeline_chain` la verifican.
 {% else %}Conoces los targets del Makefile y la cadena de dependencias del
