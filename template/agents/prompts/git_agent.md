@@ -17,7 +17,7 @@ Cuando te pidan un mensaje de commit, un changelog o un resumen de PR:
 
 Al terminar una feature (`harness finish`), cierra el ciclo con
 `git commit_feature`: sube el **patch** de la versión (`0.1.0` → `0.1.1`) en
-`pyproject.toml` y el badge del README, añade la feature al CHANGELOG y
+{% if language == 'java' %}`pom.xml`{% else %}`pyproject.toml`{% endif %} y el badge del README, añade la feature al CHANGELOG y
 commitea todo con `feat(<id>): <título>`.
 
 - **Siempre con `--dry-run true` primero**: devuelve la propuesta (versión,

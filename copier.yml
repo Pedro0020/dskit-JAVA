@@ -329,9 +329,10 @@ use_catboost:
 # sus defaults solo se usan en el arbol Java.
 build_tool:
   type: str
-  help: "Herramienta de build (gradle llegara en JAVA-001b; por ahora maven)"
+  help: "Herramienta de build: maven (wrapper incluido) | gradle (wrapper incluido)"
   choices:
     - maven
+    - gradle
   default: maven
   when: "{{ language == 'java' }}"
 
@@ -428,6 +429,12 @@ use_observability:
   default: "{{ proyecto_perfil == 'completo' }}"
   when: "{{ language == 'java' and proyecto_perfil == 'manual' }}"
 
+use_graphify:
+  type: bool
+  help: "Capa semantica opcional del vault con graphify (graphifyy[gemini], requiere GEMINI_API_KEY)?"
+  default: false
+  when: "{{ language == 'java' and proyecto_perfil == 'manual' }}"
+
 # --- Licencia y versiones ---
 project_open_source_license:
   type: str
@@ -501,6 +508,7 @@ _tasks:
   # El arnés arranca con init.sh — asegura el bit de ejecución en el destino.
   - "chmod +x init.sh"
   - "{% if language == 'java' %}chmod +x mvnw{% endif %}"
+  - "{% if language == 'java' and build_tool == 'gradle' %}chmod +x gradlew{% endif %}"
   # La instalación de dependencias es opt-in: solo en completo/manual. En
   # minimo/estandar el proyecto nace sin venv y `make setup` lo instala.
   # En Java no hay `uv sync`: el build es ./mvnw (wrapper versionado).
@@ -595,7 +603,7 @@ _exclude:
   - "{% if language == 'python' and not use_api %}agents/agents/api_agent.py{% endif %}"
   - "{% if language == 'python' and not use_api %}agents/prompts/api_agent.md{% endif %}"
   - "{% if language == 'python' and not use_api %}agents/tests/test_api_agent.py{% endif %}"
-  - "{% if language == 'python' and not use_api %}agents/prompts/api_workflow.md{% endif %}"
+  - "{% if language == 'java' or (language == 'python' and not use_api) %}agents/prompts/api_workflow.md{% endif %}"
   - "{% if not use_docker %}agents/agents/docker_agent.py{% endif %}"
   - "{% if not use_docker %}agents/prompts/docker_agent.md{% endif %}"
   - "{% if not use_docker %}agents/tests/test_docker_agent.py{% endif %}"
@@ -667,6 +675,10 @@ _exclude:
   - "{% if language != 'java' %}agents/prompts/ops_agent.md{% endif %}"
   - "{% if language != 'java' %}agents/tests/test_ops_agent.py{% endif %}"
   - "{% if language != 'java' %}agents/tests/test_api_agent_java.py{% endif %}"
+  # Workflows de dominios que no existen en Java: no viajan al render.
+  - "{% if language == 'java' %}agents/prompts/data_workflow.md{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/ml_workflow.md{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/rag_workflow.md{% endif %}"
   # --- Gating por lenguaje: python (DS/ML) vs java (Spring Boot / Spring Batch) ---
   # El contenido python-only se excluye cuando language == 'java' y el arbol
   # Java (src/, pom.xml, wrapper) cuando es python. Los ficheros compartidos
@@ -693,14 +705,20 @@ _exclude:
   - "{% if language == 'java' %}/.bandit{% endif %}"
   - "{% if language == 'java' %}/.pre-commit-config.yaml{% endif %}"
   - "{% if language == 'java' %}/ayuda{% endif %}"
-  - "{% if language != 'java' %}/pom.xml{% endif %}"
-  - "{% if language != 'java' %}/mvnw{% endif %}"
-  - "{% if language != 'java' %}/mvnw.cmd{% endif %}"
-  - "{% if language != 'java' %}/.mvn{% endif %}"
+  - "{% if language != 'java' or build_tool == 'gradle' %}/pom.xml{% endif %}"
+  - "{% if language != 'java' or build_tool == 'gradle' %}/mvnw{% endif %}"
+  - "{% if language != 'java' or build_tool == 'gradle' %}/mvnw.cmd{% endif %}"
+  - "{% if language != 'java' or build_tool == 'gradle' %}/.mvn{% endif %}"
+  - "{% if language != 'java' or build_tool == 'maven' %}/build.gradle{% endif %}"
+  - "{% if language != 'java' or build_tool == 'maven' %}/settings.gradle{% endif %}"
+  - "{% if language != 'java' or build_tool == 'maven' %}/gradle{% endif %}"
+  - "{% if language != 'java' or build_tool == 'maven' %}/gradlew{% endif %}"
+  - "{% if language != 'java' or build_tool == 'maven' %}/gradlew.bat{% endif %}"
   - "{% if language != 'java' %}/src{% endif %}"
   - "{% if language == 'java' and framework == 'spring-boot' %}src/main/java/{{ base_package_path }}/batch{% endif %}"
   - "{% if language == 'java' and 'batch' not in framework %}src/test/java/{{ base_package_path }}/DemoJobTest.java{% endif %}"
   - "{% if language == 'java' and not use_archunit %}src/test/java/{{ base_package_path }}/ArchitectureTest.java{% endif %}"
+  - "{% if language == 'java' and not use_observability %}src/test/java/{{ base_package_path }}/ActuatorExposureTest.java{% endif %}"
   - "{% if language == 'java' and migrations != 'flyway' %}src/main/resources/db/migration{% endif %}"
   - "{% if language == 'java' and migrations != 'liquibase' %}src/main/resources/db/changelog{% endif %}"
 

@@ -31,3 +31,8 @@ agents/workspace/ linguist-generated=true
 .gitignore export-ignore
 .editorconfig export-ignore
 .env.example export-ignore
+
+# Binarios (wrapper de Gradle): tratar como binario, nunca normalizar EOL
+*.jar binary
+gradlew text eol=lf
+gradlew.bat text eol=crlf

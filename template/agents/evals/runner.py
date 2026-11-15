@@ -140,6 +140,8 @@ ROUTING_BENCHMARKS: list[tuple[str, str]] = [
     ("revisa los endpoints de la API", "api"),
     ("verifica las capas de la arquitectura", "architecture"),
     ("ejecuta los tests de arquitectura", "architecture"),
+    ("regenera la memoria estructural", "architecture"),
+    ("construye el grafo de dependencias", "architecture"),
     ("comprueba la observabilidad", "ops"),
     ("verifica las métricas de batch", "ops"),
 ]

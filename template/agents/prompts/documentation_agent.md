@@ -44,15 +44,15 @@ uv run python -m agents --json run documentation update_prd --dry-run true  # so
 
 ## Límites
 
-**Rol.** Dueño de la documentación: CHANGELOG.md, README.md, docs/ y la versión del proyecto.
+**Rol.** Dueño de la documentación: CHANGELOG.md, README.md, docs/ y la versión del proyecto (pyproject.toml o pom.xml).
 
 **No hace:**
 - hacer commit de lo que escribe → git
-- tocar la sección de dependencias de pyproject.toml → env
+- tocar la sección de dependencias de pyproject.toml/pom.xml → env
 
 **Necesita que le den:** la nueva versión, para bump_version
 
-**Escribe en (nadie más toca esto):** CHANGELOG.md, README.md, docs/, pyproject.toml (campo version)
+**Escribe en (nadie más toca esto):** CHANGELOG.md, README.md, docs/, pyproject.toml/pom.xml (campo version)
 
 **Se apoya en:** git
 

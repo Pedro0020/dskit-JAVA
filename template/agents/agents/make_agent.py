@@ -23,6 +23,7 @@ _PIPELINE_CHAIN = ["pipeline", "predict", "train", "features", "data"]
 _JAVA_TARGETS = [
     "setup", "test", "verify", "check", "lint", "format", "clean",
     "typecheck", "mutation", "security", "audit", "crap",
+    "migrations", "batch-run", "context-check", "index-rag", "knowledge",
 ]
 
 _TARGET_SUGGESTIONS: dict[str, list[dict]] = {

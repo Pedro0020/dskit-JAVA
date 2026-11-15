@@ -14,12 +14,12 @@ Proyecto Java ({{ framework }}) generado con **[dskit-JAVA](https://github.com/P
 - JDK {{ java_version }}+
 - Python 3.10+ y [`uv`](https://docs.astral.sh/uv/) para el plano de control del arnés
 - Bash (Git Bash o WSL en Windows) para `./init.sh`
-- El wrapper de Maven viene incluido: no hace falta Maven instalado
+- El wrapper de {% if build_tool == 'maven' %}Maven (mvnw){% else %}Gradle (gradlew){% endif %} viene incluido: no hace falta {% if build_tool == 'maven' %}Maven{% else %}Gradle{% endif %} instalado
 
 ## Arranque
 
 ```bash
-./mvnw verify      # build + tests
+{% if build_tool == 'maven' %}./mvnw verify{% else %}./gradlew build{% endif %}      # build + tests
 ./init.sh          # la puerta del arnés
 make help
 ```
@@ -39,19 +39,42 @@ agents/                                   plano de control (Python)
 
 | Comando | Qué hace |
 |---|---|
-| `./mvnw verify` | build + tests |
+| `{% if build_tool == 'maven' %}./mvnw verify{% else %}./gradlew build{% endif %}` | build + tests |
 | `./init.sh` | la puerta del arnés |
 | `make init` | lo mismo, vía Makefile |
 | `make backlog` | estado de `harness/featureslist.json` |
 | `make agents-list` | agentes del plano de control |
 | `make agents-eval` | harness + contracts |
-| `make clean` | `./mvnw clean` |
+| `make knowledge` | regenera el vault estructural (`docs/vault/`) |
+| `make clean` | limpia el build |
 
 ## Arnés
 
 La regla que no se salta: ninguna feature se marca `done` sin que `./init.sh`
 pase en verde y sin evidencia real del comando que lo demuestra. `harness
 finish` lo aplica en código. Protocolo completo en `AGENTS.md`.
+
+## Desarrollo local (DX)
+
+- **IDE.** IntelliJ IDEA: importa el proyecto como Maven y activa el plugin
+  *Palantir Java Format* — es el mismo formato que valida `make lint`
+  (Spotless), así lo que ves es lo que el CI acepta. VS Code: extension pack
+  for Java (incluido en `.vscode/extensions.json`).
+- **Hot reload.** Añade `spring-boot-devtools` como dependencia opcional si
+  quieres recarga en caliente durante `./mvnw spring-boot:run`:
+  ```xml
+  <dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-devtools</artifactId>
+    <optional>true</optional>
+  </dependency>
+  ```
+  No va en el template por defecto: es una decisión de equipo, no del arnés.
+- **PR flow.** El trabajo se mergea por PR: CI ejecuta el build, las evals del
+  arnés y el escaneo de seguridad. La revisión LLM del `reviewer` es local
+  (necesita el asistente), no un check de GitHub. La escalera de fricción del
+  arnés reserva el `--confirm-string` para lo irreversible (`tag_release`,
+  `merge_branch`); mergear un PR no lo exige.
 
 ---
 

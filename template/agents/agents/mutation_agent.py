@@ -260,7 +260,7 @@ class MutationAgent(BaseAgent):
         except ToolExecutionError as exc:
             return AgentResult(False, self.name, "run_mutation_testing", str(exc))
 
-        reports_root = self.ctx.root / "target" / "pit-reports"
+        reports_root = MavenTool.pit_reports(self.ctx.root)
         xml_reports = sorted(reports_root.rglob("mutations.xml")) if reports_root.exists() else []
         if not xml_reports:
             return AgentResult(
@@ -310,7 +310,7 @@ class MutationAgent(BaseAgent):
         """Cobertura LINE de la clase `target` desde jacoco.csv (None si no hay informe)."""
         from agents.tools.maven_tool import MavenTool
 
-        csv_path = self.ctx.root / "target" / "site" / "jacoco" / "jacoco.csv"
+        csv_path = MavenTool.jacoco_csv(self.ctx.root)
         if not csv_path.exists():
             return None
         try:

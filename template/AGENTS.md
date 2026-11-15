@@ -249,6 +249,7 @@ la búsqueda encuentra lo que debería (`hit_rate`, `recall@k`, MRR) contra
 mejor» en un número comparable entre commits. Añade ahí las preguntas que en
 tu proyecto devuelvan basura.
 
+{% if language != 'java' %}
 El índice también cubre el **corpus de conocimiento profundo**
 (`docs/knowledge/`): matemáticas, estadística, probabilidad, matrices,
 algoritmos y su aplicación, e ingeniería del código. El `lider` lo consulta
@@ -259,6 +260,11 @@ mantiene al día con `rag refresh` — verifica cada fuente de
 tras `SCOPE-001`, el `lider` deriva topics desde `references/00-objetivo.md`
 (`rag refresh --topics "..."`, primero en `--dry-run`). La feature `KNOW-001`
 del backlog lo formaliza.
+{% endif %}
+{% if language == 'java' %}
+En Java no hay corpus de conocimiento: el índice RAG cubre `src/main/java`,
+los prompts, el vault estructural (`make knowledge`) y el histórico del arnés.
+{% endif %}
 {% endif %}
 Detalles del formato en `harness/progress/README.md`.
 
@@ -300,6 +306,14 @@ type-to-confirm de GitHub. El token cambia en cada operación, así que `--yes`
 solo no basta. Y si la puerta detecta fatiga —5 aprobaciones destructivas
 seguidas sin ningún fallo—, la siguiente destructiva también exige ese nombre
 hasta que algo falle y rearme la vigilancia.
+
+{% if language == 'java' %}
+En el flujo Java, lo que se mergea es un **PR**: GitHub hace el merge y el
+arnés no lo firma, así que mergear por PR no exige `--confirm-string`. Lo
+realmente destructivo es `tag_release` (publicar una versión) y `merge_branch`
+local — esos sí. El CI del PR ejecuta la parte determinista de la revisión
+(build, evals del arnés, seguridad); la revisión del `reviewer` es local.
+{% endif %}
 
 ```bash
 uv run python -m agents run git commit_feature --id DATA-001 --title "..." --yes          # destructiva: --yes basta

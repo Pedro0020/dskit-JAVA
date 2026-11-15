@@ -72,8 +72,47 @@ jobs:
 """
 
 
-def generate_ci_yaml_java(*, java_version: str = "17") -> str:
-    """Genera el workflow Java: `./mvnw -B verify` con caché de Maven y artefacto JaCoCo."""
+def generate_ci_yaml_java(*, java_version: str = "17", build_tool: str = "maven") -> str:
+    """Genera el workflow Java: build+tests con caché, artefacto JaCoCo."""
+    if build_tool == "gradle":
+        return f"""\
+# Generado por agents/agents/cicd_agent.py — revisa las versiones de las
+# actions (checkout, setup-java) periódicamente, cambian con frecuencia.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build + Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ["{java_version}"]
+    steps:
+      - uses: {_CHECKOUT_ACTION}
+
+      - name: Configurar JDK {java_version}
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: {java_version}
+          cache: gradle
+
+      - name: Build, tests y cobertura
+        run: ./gradlew build
+
+      - name: Publicar informe JaCoCo
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco
+          path: build/reports/jacoco/test/html/
+"""
     return f"""\
 # Generado por agents/agents/cicd_agent.py — revisa las versiones de las
 # actions (checkout, setup-java) periódicamente, cambian con frecuencia.

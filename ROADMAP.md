@@ -13,10 +13,10 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | ID | Tema | Estado | Prioridad |
 |----|------|--------|-----------|
 | JAVA-001 | Template copier Java (Maven, Spring Boot/Batch, H2, Flyway, wrapper) | Hecha | — |
-| JAVA-001b | Build tool Gradle | Pendiente | P4 |
+| JAVA-001b | Build tool Gradle | Hecha (fase 1) | — |
 | JAVA-002 | Puerta `./mvnw verify` + `contextLoads` | Hecha | — |
 | JAVA-003 | Backlog semilla Java | Hecha | — |
-| JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Pendiente (004a–d) | P3 |
+| JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Hecha (004a–d) | — |
 | JAVA-005a | Fixes language-aware (commit/doctor/env/untracked) | Hecha | — |
 | JAVA-005b | Reescritura y poda de agentes (test/dependency/cicd/make/doc/plan) | Hecha | — |
 | JAVA-005c | Reescritura JVM de refactor y graph (hueco del SPEC §3.5) | Pospuesta (decisión pendiente) | P3 |
@@ -28,20 +28,22 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-011 | Agente `ops` / observabilidad | Hecha | — |
 | JAVA-012 | Pipeline de calidad JVM: JaCoCo + Spotless (fase A) | Hecha | — |
 | JAVA-012b | PIT + Error Prone + Trivy/SBOM (fase B) | Hecha | — |
+| JAVA-012c | Fachada de calidad ampliada (migrations/batch-run/context-check/index-rag/knowledge + PMD en lint) | Hecha | — |
 | JAVA-013 | CI Java del template + `smoke-java` | Hecha | — |
-| JAVA-013b | CI Java ampliado (matriz JDK, evals del arnés en CI, SBOM+Trivy por push, artefacto PIT) | Pendiente | P2 |
-| JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Pendiente (014a–c) | P3 |
-| JAVA-015 | DX: reviewer como PR check, IntelliJ, fricción | Pendiente | P3 |
-| JAVA-016 | Memoria estructural Java: vault + grafo determinista + graphify opcional | Pendiente | P4 |
+| JAVA-013b | CI Java ampliado (matriz JDK, evals del arnés en CI, SBOM+Trivy por push, artefacto PIT) | Hecha | — |
+| JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Hecha (014a–c) | — |
+| JAVA-015 | DX: reviewer como PR check, IntelliJ, fricción | Hecha | — |
+| JAVA-016 | Memoria estructural Java: vault + grafo determinista + graphify opcional | Hecha | — |
 | — | Release/publish del artefacto (GitHub Packages / Maven Central) | Pospuesto | P4 |
 | — | Eliminar el árbol Python (si se aprueba) | Pendiente | P4 |
 | — | Segunda ronda E2E (Postgres real, JDK 21, `copier update`) | Pendiente | P4 |
 
 Hitos: **H0** completado (backlog Java, fixes language-aware, v2.0.0);
 **H1** completado (fase A + CI + fase B de calidad + poda/reescritura de
-agentes + dominios Java); H2–H4 pendientes (rúbrica Java, prompts de los
-agentes que razonan, CI ampliado, memoria estructural Java, DX, Gradle,
-segunda ronda E2E).
+agentes + dominios Java); **H2** completado (prompts Java, CI ampliado,
+rúbrica, DX, memoria estructural, Gradle fase 1). Pendiente del backlog:
+release/publish (pospuesto), 005c (decisión), Gradle fase 2 (extras JVM),
+segunda ronda E2E ampliada (JDK 21) y eliminar el árbol Python (si se aprueba).
 
 Decisiones previas: plano de control Python + template Java (sin port a JVM),
 núcleo de gobierno intacto, RAG no se toca. Los dominios críticos
@@ -51,10 +53,16 @@ confianza real o falsa.
 
 ### Plan detallado de lo pendiente (Java)
 
+> **Estado (15 Nov 2026): implementado.** 004a–d, 005c (pospuesta), 012c,
+> 013b, 014a–c, 015 y 016 están hechos y verificados con renders limpios.
+> Quedan solo: release/publish (pospuesto a propósito), la fase 2 de Gradle
+> (typecheck/PIT/PMD/SBOM en Gradle son Maven-first) y la segunda ronda E2E
+> ampliada (JDK 21 + Postgres real: el render Postgres y `copier update` ya
+> están verificados).
+
 Desglose accionable de la auditoría del 15 Nov 2026 sobre un render Java
-limpio: el build, la cobertura, el CI y los evals están en verde; lo que falla
-es la **coherencia de los prompts** (siguen siendo de Python/ML) y la capa de
-gobierno específica de Java.
+limpio: el build, la cobertura, el CI y los evals están en verde; lo que faltaba
+era la **coherencia de los prompts** y la capa de gobierno específica de Java.
 
 #### JAVA-004a — Prompts de los agentes que razonan
 - `.opencode/agents/{lider,explorer,implementer,reviewer}.md` con

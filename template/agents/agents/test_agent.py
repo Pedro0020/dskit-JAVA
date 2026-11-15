@@ -154,7 +154,7 @@ class TestAgent(BaseAgent):
         except ToolExecutionError as exc:
             return AgentResult(False, self.name, "run_tests", str(exc))
 
-        reports_dir = self.ctx.root / "target" / "surefire-reports"
+        reports_dir = MavenTool.surefire_dir(self.ctx.root)
         try:
             summary = MavenTool.parse_surefire_reports(reports_dir)
         except ValueError as exc:
@@ -183,9 +183,9 @@ class TestAgent(BaseAgent):
         except ToolExecutionError as exc:
             return AgentResult(False, self.name, "coverage_report", str(exc))
 
-        csv_path = self.ctx.root / "target" / "site" / "jacoco" / "jacoco.csv"
+        csv_path = MavenTool.jacoco_csv(self.ctx.root)
         if not csv_path.exists():
-            return AgentResult(False, self.name, "coverage_report", "No se generó jacoco.csv — ejecuta primero './mvnw test'.")
+            return AgentResult(False, self.name, "coverage_report", "No se generó jacoco.csv — ejecuta primero el build con tests.")
 
         report = MavenTool.parse_jacoco_csv(csv_path)
         low_coverage = {f: pct for f, pct in report["per_file"].items() if pct < 60}

@@ -68,14 +68,14 @@ copier copy --trust ./dskit-JAVA mi_proyecto
 | `project_slug` | `[a-z0-9_]` | Nombre del artefacto / paquete |
 | `base_package` | `com.empresa.proyecto` | Paquete base Java |
 | `java_version` | `17` · `21` · `25` | Versión de Java (LTS) |
-| `build_tool` | `maven` | Maven con wrapper (Gradle pendiente) |
+| `build_tool` | `maven` · `gradle` | Build tool con wrapper (JAVA-001b: Gradle verificado para build/test/cobertura/formato) |
 | `framework` | `spring-boot` · `spring-boot-batch` · `spring-boot-web+batch` | Stack Spring |
 | `db` | `h2` · `postgres` · `mysql` · `none` | Base de datos |
 | `migrations` | `flyway` · `liquibase` · `none` | Migraciones de esquema |
 | `use_security` | bool | Spring Security |
 | `use_testcontainers` | bool | Tests de integración con contenedores |
-| `use_pit` | bool | Mutation testing con PIT (pipeline en JAVA-012) |
-| `use_archunit` | bool | Tests de arquitectura (JAVA-010) |
+| `use_pit` | bool | Mutation testing con PIT (`make mutation`) |
+| `use_archunit` | bool | Tests de arquitectura ArchUnit (`make verify`) |
 | `use_observability` | bool | Actuator + Micrometer + Prometheus |
 | `proyecto_perfil` | `minimo` · `estandar` · `completo` · `manual` | Fija los defaults |
 
@@ -127,7 +127,7 @@ make agents-list     # agentes disponibles
 make agents-eval     # harness + contracts
 ```
 
-## Make targets
+## Make targets (del proyecto generado)
 
 | Target | Qué hace |
 |---|---|
@@ -152,13 +152,18 @@ make agents-eval     # harness + contracts
 | Feature | Estado |
 |---|---|
 | JAVA-001 — template Java (Maven, Spring Boot/Batch, H2, Flyway, wrapper) | Hecha |
+| JAVA-001b — Gradle (fase 1: build/test/cobertura/formato) | Hecha |
 | JAVA-002 — puerta `./mvnw verify` + `contextLoads` | Hecha |
 | JAVA-003 — backlog semilla Java | Hecha |
+| JAVA-004 — prompts Java (lider/explorer/implementer/reviewer) y docs coherentes | Hecha |
 | JAVA-005a — agentes language-aware (commit/doctor/env) | Hecha |
 | JAVA-005b — reescritura JVM de test/dependency/cicd/make/doc/plan + poda data/ml/mlflow/notebook | Hecha |
 | JAVA-006..011 — dominios Java: batch, migrations, security, api Spring, architecture (ArchUnit), ops/observabilidad | Hecha |
 | JAVA-012 — pipeline de calidad JVM: JaCoCo + Spotless + PIT + Error Prone/NullAway + Trivy/SBOM | Hecha |
-| JAVA-013 — CI del template Java + `smoke-java` | Hecha |
+| JAVA-013 — CI del template Java (matriz JDK, evals del arnés, SBOM+Trivy) + `smoke-java` | Hecha |
+| JAVA-014 — rúbrica Java: R-criterios R-J1..R-J5 + test de actuator exposure + casos canónicos | Hecha |
+| JAVA-015 — DX: IntelliJ/Spotless, DevTools documentado, fricción PR | Hecha |
+| JAVA-016 — memoria estructural: vault determinista + grafo + graphify opcional | Hecha |
 
 Alcance y criterios: [SPEC-JAVA.md](SPEC-JAVA.md) · estado y prioridades:
 [ROADMAP.md](ROADMAP.md).
@@ -166,9 +171,11 @@ Alcance y criterios: [SPEC-JAVA.md](SPEC-JAVA.md) · estado y prioridades:
 El árbol Python original de la plantilla sigue disponible con
 `language: python`, pero este fork no lo mantiene como foco.
 
-**Verificado:** render `estandar` Java → `./init.sh` verde, `./mvnw verify`
-verde, evals del arnés sobre el render Java **PASS** (harness 14/14, routing
-43/43, contracts) y render Python sin regresión (routing 36/36).
+**Verificado (renders limpios):** estandar Maven → `./init.sh` verde
+(`./mvnw verify`); Gradle → `./gradlew build` verde; Postgres+security+
+observability → gate verde; `copier update` aplica cambios del template;
+evals del arnés **PASS** (harness 14/14, routing 45/45, contracts) y render
+Python sin regresión.
 
 ## Créditos y origen
 

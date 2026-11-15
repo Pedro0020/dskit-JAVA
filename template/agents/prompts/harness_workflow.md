@@ -70,6 +70,36 @@ induce con ejemplos, sin entrenar nada.
 
 Tres ejemplos, uno por rol del arnés:
 
+{% if language == 'java' %}
+```
+EXPLORER (investigación, solo lectura)
+{"§":1,"E":{"PedidoService":["src/main/java/.../service/PedidoService.java","servicio"]},
+ "S":{"PedidoService.metodos":3,"tests":"PedidoServiceTest"},
+ "R":["PedidoService→PedidoRepository:usa"],
+ "Δ":["PedidoService.estado:leido@ARCH-001"],
+ "μ":{"rol":"explorer","cert":0.9}}
+= "PedidoService (3 métodos) usa PedidoRepository; su test existe y las capas
+   se respetan. Alta confianza."
+
+IMPLEMENTER (implementación con evidencia)
+{"§":1,"E":{"DemoJobConfig":["src/main/java/.../batch/DemoJobConfig.java","batch"]},
+ "S":{"DemoJobConfig.job":"demoJob","steps":1},
+ "R":["DemoJobConfig→pedidos:escribe"],
+ "Δ":["DemoJobConfig.nuevo→implementado@FEAT-007","tests:0→1@FEAT-007"],
+ "μ":{"rol":"implementer","cert":0.95,"evidencia":"./mvnw verify: BUILD SUCCESS"}}
+= "DemoJobConfig con 1 step implementado; ./mvnw verify en verde."
+
+REVIEWER (veredicto)
+{"§":1,"E":{"F":["FEAT-007","feature"]},
+ "S":{"F.criterios":3,"F.cumplidos":2},
+ "R":[],
+ "Δ":["F.estado:in_progress→reviewed@FEAT-007"],
+ "μ":{"rol":"reviewer","cert":0.55,"veredicto":"rechazado",
+      "por_que":"el writer no está en transacción (R-J1)"}}
+= "Revisión de FEAT-007: 2/3 criterios. Rechazado — writer sin transacción.
+   Certeza 0.55: el grueso está, falta el límite transaccional."
+```
+{% else %}
 ```
 EXPLORER (investigación, solo lectura)
 {"§":1,"E":{"X":["data/raw/clientes.csv","dataset"]},
@@ -99,6 +129,7 @@ REVIEWER (veredicto)
 = "Revisión de FEAT-007: 2/3 criterios cumplidos. Rechazado — falta el caso
    vacío. Certeza 0.55: el implementer acertó el grueso, pero no el todo."
 ```
+{% endif %}
 
 Reglas:
 - `E` (qué entidades tocó), `S` (estado resultante), `R` (relaciones nuevas),

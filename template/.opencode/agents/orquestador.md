@@ -109,7 +109,7 @@ Carga el skill del agente solo cuando necesites su acción exacta:
 {% if graphify_mode != "no" %}- `skill knowledge_agent` → grafo + Obsidian{% endif %}
 - `skill memory_agent` → memoria
 - `skill harness_agent` → backlog y progreso del arnés
-- `skill doc_agent` → documentación unificada (graphify, RAG, vault)
+- `skill doc_agent` → documentación unificada ({% if language == 'java' %}código, RAG, vault{% else %}graphify, RAG, vault{% endif %})
 - `skill orchestrator` → ruteo Python
 - `skill universal_guidelines` → principios
 

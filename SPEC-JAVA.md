@@ -52,10 +52,13 @@ que lo demuestra*.
 
 - Variables nuevas en `copier.yml`: `build_tool` (maven|gradle),
   `java_version` (17|21|25), `base_package` + `groupId`/`artifactId`,
-  `framework` (spring-boot-web | spring-boot-batch | spring-boot-web+batch |
-  quarkus | plain), `db` (postgres|mysql|h2), `migrations`
+  `framework` (spring-boot-web | spring-boot-batch | spring-boot-web+batch),
+  `db` (postgres|mysql|h2), `migrations`
   (flyway|liquibase|none), `use_security`, `use_testcontainers`, `use_pit`,
   `use_archunit`, `use_observability`. `use_kafka` queda en fase 2.
+  > Estado: `framework` implementa solo los tres stacks Spring (`quarkus` y
+  > `plain` quedaron descartados — D1: el foso es el arnés, no el framework);
+  > `gradle` es JAVA-001b; `use_kafka` sigue fuera de alcance.
 - Los perfiles `minimo|estandar|completo|manual` se reutilizan con defaults
   derivados; el gating por `_exclude` funciona igual que hoy.
 - Estructura generada: `src/main/java/<paquete>/{controller,service,repository,domain,config,batch}`
@@ -118,6 +121,9 @@ que lo demuestra*.
 - Reescritos con equivalente JVM (10): test (JUnit5+JaCoCo), doctor (pom/JDK/m2),
   dependency (OWASP + versions-maven + convergencia/enforcer), cicd, make,
   refactor, doc/documentation (Javadoc), graph (ArchUnit/JDeps), env, plan.
+  > Estado: hechos test/dependency/cicd/make/doc/plan (JAVA-005b). `refactor`
+  > y `graph` quedan pendientes de decisión (JAVA-005c: reescribir o excluir
+  > en renders Java).
 - Podados (4): data, ml, mlflow, notebook — sus contratos permanecen en
   CONTRACTS sin registro (patrón ya tolerado por `validate_contracts`).
 - `mutation` deja de usar el AST casero y pasa a envolver PIT (ver JAVA-012).
@@ -193,15 +199,24 @@ que lo demuestra*.
 
 **Criterios**
 
-- `make test` → `./mvnw test` + JaCoCo con umbral ≥80% enforce.
-- `make lint` → Spotless check + Checkstyle/PMD; `make format` → Spotless apply.
+- `make test` → `./mvnw test`; la cobertura JaCoCo con umbral ≥80% se
+  **enforcea en `verify`** (`make verify`/`check`), no en `test`.
+- `make lint` → Spotless check + PMD/Checkstyle (PDM pendiente: JAVA-012c).
 - `make typecheck` → compilación `-Werror` + Error Prone + NullAway.
 - `make security` → OWASP dependency-check + Trivy + SBOM (cyclonedx).
 - `make mutation` → PIT con `targetClasses` acotado por módulo.
-- `make crap` → crap4j (o CRAP con JaCoCo + complejidad de PMD).
+- `make crap` → CRAP con JaCoCo + complejidad (agente `mutation`).
 - `make audit` → PMD CPD + ArchUnit.
-- Nuevos: `make migrations`, `make batch-run`, `make context-check`.
-- Todos los targets son fachada sobre `./mvnw` (D6).
+- `make migrations`, `make batch-run`, `make context-check` (pendientes —
+  JAVA-012c).
+- Todos los targets son fachada sobre `./mvnw` (D6), salvo los que delegan en
+  el plano de control (crap, migrations status).
+
+> Estado: JaCoCo+Spotless, typecheck, security, mutation, crap, audit y la
+> fachada ampliada (`migrations`/`batch-run`/`context-check`/`index-rag`/
+> `knowledge`) implementados; `lint` incluye PMD (JAVA-012c). En Gradle
+> (JAVA-001b fase 1) funcionan build/test/cobertura/formato; typecheck, PIT,
+> PMD y SBOM son Maven-first (fase 2).
 
 ### 3.13 CI y release — JAVA-013
 
@@ -213,6 +228,11 @@ que lo demuestra*.
 - Release: versionado semver del artefacto + publish a GitHub Packages /
   Maven Central (historia de release nueva — el proyecto Python no publica).
 - El validador de renders del template cubre el template Java.
+
+> Estado: workflow base y `smoke-java` (JAVA-013), y CI ampliado (JAVA-013b:
+> matriz 17+21, job de evals/tests del arnés, SBOM+Trivy por push, job PIT).
+> Release/publish queda **pospuesto** (P4): exige cuentas/claves por usuario y
+> un workflow que fallaría para la mayoría — no se convierte en confianza falsa.
 
 ### 3.14 Rúbrica — JAVA-014
 
@@ -269,13 +289,18 @@ que lo demuestra*.
 ## 6. Plan de fases
 
 - **Fase 0 — Esqueleto:** JAVA-001 + JAVA-002. Un render estandar Java que
-  pasa la puerta (`mvnw verify` + `contextLoads`).
+  pasa la puerta (`mvnw verify` + `contextLoads`). **Completada.**
 - **Fase 1 — Núcleo:** JAVA-005 + JAVA-012 + JAVA-003. Agentes reescritos,
-  pipeline de calidad JVM, plantillas de backlog.
+  pipeline de calidad JVM, plantillas de backlog. **Completada.**
 - **Fase 2 — Dominios:** JAVA-006..JAVA-011. batch, migrations, security, api,
   architecture, observabilidad — cada uno con agente + contrato + tests.
+  **Completada.**
 - **Fase 3 — Gobierno y adopción:** JAVA-013 + JAVA-014 + JAVA-004 + JAVA-015.
-  CI/release, rúbrica Java, agentes que razonan, DX.
+  CI/release, rúbrica Java, agentes que razonan, DX. **En curso:** JAVA-013
+  hecha; 013b/014/004/015 pendientes. JAVA-016 (memoria estructural) añadida
+  en Fase 4.
+- **Fase 4 — Memoria y extras:** JAVA-016 (vault + grafo determinista,
+  graphify opcional), JAVA-001b (Gradle), segunda ronda E2E. **Pendiente.**
 
 Cada feature sigue el flujo SDD del arnés: backlog → `write_feature` (Gherkin)
 → `approve` (puerta humana) → TDD + evidencia → `finish` con rúbrica.
@@ -283,11 +308,16 @@ Cada feature sigue el flujo SDD del arnés: backlog → `write_feature` (Gherkin
 ## 7. Métrica de éxito
 
 - Un render `estandar` Java: `./init.sh` verde, `./mvnw verify` verde, JaCoCo ≥80%.
-- `uv run python -m agents.evals.runner` verde sobre el template Java.
-- Los 21 agentes del núcleo con contrato; los 6 dominios nuevos con agente +
-  contrato + tests + workflow skill.
+  **Verificado** (15 Nov 2026, gate completo).
+- `uv run python -m agents.evals.runner --harness --routing --contracts` verde
+  sobre el render Java. **Verificado** (14/14, 43/43, contracts PASS).
+- Núcleo de gobierno + 6 dominios Java con contrato, tests y workflow skill.
+  **Verificado** (35 contratos en el render).
 - El reviewer rechaza (con test que lo demuestra) un writer sin transacción y
-  un job no reiniciable — los dos casos canónicos que hoy aprobaría.
+  un job no reiniciable — los dos casos canónicos. **Cubierto (014b)** con
+  proxies deterministas: `batch.validate_job` rechaza chunk sin
+  `PlatformTransactionManager` y autorun/esquema inválidos; los R-criterios
+  R-J1/R-J2 los aplica el reviewer.
 
 ## 8. Arquitectura física (resuelta en Fase 0)
 

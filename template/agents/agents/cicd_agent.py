@@ -107,7 +107,8 @@ class CICDAgent(BaseAgent):
             from agents.tools.cicd_tool import generate_ci_yaml_java
 
             java_version = str(self.ctx.config.extra.get("java_version", "17"))
-            yaml_content = generate_ci_yaml_java(java_version=java_version)
+            build_tool = str(self.ctx.config.extra.get("build_tool", "maven"))
+            yaml_content = generate_ci_yaml_java(java_version=java_version, build_tool=build_tool)
         else:
             version = python_version or self.ctx.config.python_version
             module = self.ctx.config.project_slug
