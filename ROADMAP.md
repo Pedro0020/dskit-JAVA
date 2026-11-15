@@ -19,7 +19,7 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Pendiente (004a–d) | P3 |
 | JAVA-005a | Fixes language-aware (commit/doctor/env/untracked) | Hecha | — |
 | JAVA-005b | Reescritura y poda de agentes (test/dependency/cicd/make/doc/plan) | Hecha | — |
-| JAVA-005c | Reescritura JVM de refactor y graph (hueco del SPEC §3.5) | Pendiente | P3 |
+| JAVA-005c | Reescritura JVM de refactor y graph (hueco del SPEC §3.5) | Pospuesta (decisión pendiente) | P3 |
 | JAVA-006 | Agente `batch` | Hecha | — |
 | JAVA-007 | Agente `migrations` | Hecha | — |
 | JAVA-008 | Agente `security` | Hecha | — |
@@ -29,15 +29,19 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-012 | Pipeline de calidad JVM: JaCoCo + Spotless (fase A) | Hecha | — |
 | JAVA-012b | PIT + Error Prone + Trivy/SBOM (fase B) | Hecha | — |
 | JAVA-013 | CI Java del template + `smoke-java` | Hecha | — |
-| JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Pendiente (014a–b) | P3 |
+| JAVA-013b | CI Java ampliado (matriz JDK, evals del arnés en CI, SBOM+Trivy por push, artefacto PIT) | Pendiente | P2 |
+| JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Pendiente (014a–c) | P3 |
 | JAVA-015 | DX: reviewer como PR check, IntelliJ, fricción | Pendiente | P3 |
+| JAVA-016 | Memoria estructural Java: vault + grafo determinista + graphify opcional | Pendiente | P4 |
+| — | Release/publish del artefacto (GitHub Packages / Maven Central) | Pospuesto | P4 |
 | — | Eliminar el árbol Python (si se aprueba) | Pendiente | P4 |
 | — | Segunda ronda E2E (Postgres real, JDK 21, `copier update`) | Pendiente | P4 |
 
 Hitos: **H0** completado (backlog Java, fixes language-aware, v2.0.0);
 **H1** completado (fase A + CI + fase B de calidad + poda/reescritura de
 agentes + dominios Java); H2–H4 pendientes (rúbrica Java, prompts de los
-agentes que razonan, DX, Gradle, segunda ronda E2E).
+agentes que razonan, CI ampliado, memoria estructural Java, DX, Gradle,
+segunda ronda E2E).
 
 Decisiones previas: plano de control Python + template Java (sin port a JVM),
 núcleo de gobierno intacto, RAG no se toca. Los dominios críticos
@@ -80,12 +84,13 @@ gobierno específica de Java.
 - `agents_reference.md`: las filas Python (data/ml/notebook) no se muestran
   en un render Java.
 
-#### JAVA-005c — Reescritura JVM de refactor y graph (hueco del SPEC §3.5)
+#### JAVA-005c — Reescritura JVM de refactor y graph (hueco del SPEC §3.5) — POSPUESTA
 El SPEC lista `refactor` y `graph` entre los 10 agentes a reescribir; el
-ROADMAP solo trackeó 6. Decidir: (a) reescribirlos para Java (refactor:
-extracción de métodos/records/campos; graph: JDeps/ArchUnit) o (b)
-excluirlos en renders Java y documentar la decisión. Hasta decidir, no
-cuentan como hechos.
+ROADMAP solo trackeó 6. Decisión pendiente: (a) reescribirlos para Java
+(refactor: extracción de métodos/records/campos; graph: JDeps/ArchUnit) o
+(b) excluirlos en renders Java y documentar la decisión. Nota: `graph`
+(figuras ML) no tiene relación con la memoria del proyecto — la memoria va
+en JAVA-016. Hasta decidir, no cuentan como hechos.
 
 #### JAVA-014a — R-criterios Java en `agents/rubric.py`
 - `CRITERIOS_REVISION` con la capa Java: transacciones (límites,
@@ -96,6 +101,39 @@ cuentan como hechos.
 #### JAVA-014b — Casos canónicos con test
 - Test que demuestre que `harness finish` rechaza un writer sin transacción
   y un job no reiniciable (métrica de éxito del SPEC §7).
+
+#### JAVA-014c — Test de actuator exposure en el template
+- Además del agente `security`, el template trae un test que falla si
+  `management.endpoints.web.exposure.include` expone endpoints sensibles en
+  el perfil base (criterio del SPEC §3.8).
+
+#### JAVA-013b — CI Java ampliado
+- Matriz de JDKs en el workflow del template; pasos de evals del arnés
+  (harness + contracts + routing) como el branch Python; SBOM + Trivy en
+  cada push; informe PIT como artefacto. Sin release/publish (pospuesto).
+
+#### JAVA-016 — Memoria estructural Java (vault + grafo determinista + graphify opcional)
+El vault Obsidian es la memoria del proyecto en Python (IA_index + fichas de
+agentes + grafo de conocimiento). En Java se replica en dos capas:
+
+- **Núcleo determinista (sin llaves ni red)**: generador stdlib que produce
+  `docs/vault/` con `00_META/IA_index.md` (mapa de paquetes/dominios),
+  `01_PROYECTO/` (arquitectura, decisiones), `02_DOMINIOS/` (fichas de jobs,
+  migraciones, endpoints), `04_VISUALIZACIONES/grafo_conocimiento.md` y
+  `05_AGENTES/`. El grafo sale de jdeps + el parseo de anotaciones que ya
+  hacen los agentes (`architecture`, `batch`, `migrations`, `api`).
+  Regeneración: `make knowledge`. Los agentes leen IA_index al activarse;
+  `doc search` ya grepea el vault.
+- **graphify opcional (capa semántica)**: pregunta copier `use_graphify`
+  (solo Java, off por defecto) + grupo uv `graphify` que instala
+  `graphifyy[gemini]`. El mismo tooling existente (`graphify_tool`,
+  `knowledge build`, `doc search`) enriquece el MISMO vault con la capa
+  semántica del LLM (requiere GEMINI_API_KEY). No es el núcleo: el gate y
+  la estructura no pueden depender de un LLM.
+- Spike previo: confirmar que `graphifyy` indexa `.java` con calidad
+  aceptable (1 render + 1 build del grafo).
+- Complemento: `make index-rag` en la fachada Java (hoy rag_agent se
+  renderiza pero el Makefile Java no expone el índice).
 
 ### OMP-007 — GStack: lock de pipeline
 
