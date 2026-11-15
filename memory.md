@@ -397,4 +397,8 @@ dependencias, siguiendo la filosofía de `template/.opencode/agents/lider.md`
   (Apache-2.0), centrado en Java. Atribución en `NOTICE` + `CREDITS.md` +
   README. Remoto `origin` = fork propio; `upstream` (original DS) eliminado
   porque no se sincroniza.
+- **Repo independiente (Nov 2026)**: se salió de la red de forks
+  (*Settings → Leave fork network*). GitHub ya no lo marca como fork
+  (`fork: false`, sin parent); se conservan código e historial y la
+  atribución Apache-2.0. PRs solo dentro de `Pedro0020/dskit-JAVA`.
 
