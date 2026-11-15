@@ -12,7 +12,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
 - Fork `Pedro0020/dskit-JAVA` (basado en dskit de cacelass): variable
   `language` (python | java), árbol Java con Spring Boot / Spring Batch,
   puerta `./mvnw verify` + `contextLoads` y gating de agentes por lenguaje.
-  Detalle en [SPEC-JAVA.md](SPEC-JAVA.md) y [ROADMAP.md](ROADMAP.md).
+  Detalle en el historial de cambios y en la documentación operativa.
 
 ## [No publicado]
 
@@ -150,11 +150,10 @@ y enlaces) y arXiv (reutiliza `knowledge_tool`) se indexan con markdown
 estructurado en vez de HTML plano. Sin dependencias nuevas (stdlib). El resto
 de URLs siguen por el convertidor genérico.
 
-### ROADMAP propio de dskit
+### Planificación propia de dskit
 
-Nuevo `ROADMAP.md` en la raíz: backlog del template con el formato del arnés
-(IDs + criterios), donde se registran las mejoras y las lecciones de los videos
-y de omp.sh (qué adoptar y qué rechazar y por qué).
+La planificación del template sigue el formato del arnés (IDs + criterios), y
+las mejoras quedan registradas en el historial y la documentación operativa.
 
 ### Corpus de conocimiento profundo dentro de `use_rag`
 

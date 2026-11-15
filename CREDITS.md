@@ -19,9 +19,8 @@ Este proyecto es una obra derivada de **dskit**:
 Adaptación del arnés y del template para desarrollo Java (Spring Boot /
 Spring Batch), mantenida por **poganmart** desde 2026.
 
-Los cambios principales están detallados en [NOTICE](NOTICE). La spec de la
-adaptación vive en [SPEC-JAVA.md](SPEC-JAVA.md) y el estado del backlog en
-[ROADMAP.md](ROADMAP.md).
+Los cambios principales están detallados en [NOTICE](NOTICE) y en el historial
+de cambios del repositorio.
 
 ## Licencia y atribución
 

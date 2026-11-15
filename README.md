@@ -214,8 +214,7 @@ mi-proyecto/
 ## Documentación
 
 - [AGENTS.md](AGENTS.md): protocolo operativo del arnés.
-- [SPEC-JAVA.md](SPEC-JAVA.md): alcance y decisiones técnicas.
-- [ROADMAP.md](ROADMAP.md): evolución y tareas previstas.
+- [CREDITS.md](CREDITS.md) y [NOTICE](NOTICE): origen y atribución.
 - [SECURITY.md](SECURITY.md): límites y recomendaciones de seguridad.
 - [CONTRIBUTING.md](CONTRIBUTING.md): contribución al repositorio.
 

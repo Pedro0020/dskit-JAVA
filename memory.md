@@ -9,7 +9,7 @@ Instrucciones, correcciones y preferencias guardadas por el usuario para recorda
 - **Una rama por tarea**: crear `feat/…`, `fix/…` o `chore/…` desde `main`; nunca trabajar directamente en `main`.
 - **PR solo dentro del fork**: base `Pedro0020/dskit-JAVA`, nunca contra el upstream `cacelass/dskit`. En un fork, el enlace `/pull/new/<rama>` apunta por defecto al padre: usar `/compare/main...<rama>?expand=1`.
 - **Al terminar**: push de la rama y PR en el fork; si no hay `gh`, dar la URL de compare del propio repo. También vale merge local a `main` sin PR si se pide.
-- Los documentos de planificación de una sesión (planes, informes E2E) no se acumulan en la raíz: lo accionable va a `ROADMAP.md`, lo duradero a `SPEC-JAVA.md` y el resto queda en el historial de git.
+- Los documentos de planificación de una sesión no se acumulan en la raíz; el estado duradero queda en el historial de git y en la documentación operativa.
 
 ## Commits
 
@@ -201,7 +201,7 @@ primero" / "cero deps"). Los 4 videos validan el diseño; casi todo ya existía.
 
 ### Lecciones de omp.sh (Oh-My-Pi, la web)
 
-Implementado (ROADMAP OMP-001..005):
+Implementado (plan anterior OMP-001..005):
 - `commit_atomic`: split por área, lock files fuera, mensajes Conventional,
   rechazo de ciclos, dry-run primero.
 - `memory_edit` + scoping (global/per-proyecto) en el banco de memoria.
@@ -355,8 +355,9 @@ dependencias, siguiendo la filosofía de `template/.opencode/agents/lider.md`
 
 ## Java: adaptación del arnés (Nov 2026)
 
-- Spec en `SPEC-JAVA.md` (JAVA-001..015) y estado del plan en `ROADMAP.md`. Decisión
-  **A1**: un solo árbol `template/` con variable `language` (python|java);
+- La adaptación Java (JAVA-001..016) está integrada en el código y la
+  documentación operativa. Decisión **A1**: un solo árbol `template/` con variable
+  `language` (python|java);
   el foso de gobierno no se duplica. Spike de Fase 0: núcleo con **0 líneas
   cambiadas**, harness eval **14/14**, contracts PASS, puerta `mvnw verify` +
   `contextLoads` verde.
