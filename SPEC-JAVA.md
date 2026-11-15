@@ -1,7 +1,7 @@
 # SPEC-JAVA — Arnés dskit para Java (Spring Boot / Spring Batch)
 
-Estado: implementada (v2, Java-only) — JAVA-001..013 (incl. 001b fase 1) y
-JAVA-016 hechos; ver ROADMAP.md para lo pendiente (Gradle fase 2).
+Estado: implementada (v2, Java-only) — JAVA-001..016 hechos; Gradle fase 1
+está verificada y la fase 2 queda fuera de esta versión.
 Backlog: JAVA-001..JAVA-016 (ver ROADMAP.md)
 
 ---
@@ -203,14 +203,13 @@ que lo demuestra*.
 
 - `make test` → `./mvnw test`; la cobertura JaCoCo con umbral ≥80% se
   **enforcea en `verify`** (`make verify`/`check`), no en `test`.
-- `make lint` → Spotless check + PMD/Checkstyle (PDM pendiente: JAVA-012c).
+- `make lint` → Spotless check + PMD/Checkstyle.
 - `make typecheck` → compilación `-Werror` + Error Prone + NullAway.
 - `make security` → OWASP dependency-check + Trivy + SBOM (cyclonedx).
 - `make mutation` → PIT con `targetClasses` acotado por módulo.
 - `make crap` → CRAP con JaCoCo + complejidad (agente `mutation`).
 - `make audit` → PMD CPD + ArchUnit.
-- `make migrations`, `make batch-run`, `make context-check` (pendientes —
-  JAVA-012c).
+- `make migrations`, `make batch-run`, `make context-check`.
 - Todos los targets son fachada sobre `./mvnw` (D6), salvo los que delegan en
   el plano de control (crap, migrations status).
 
@@ -298,11 +297,9 @@ que lo demuestra*.
   architecture, observabilidad — cada uno con agente + contrato + tests.
   **Completada.**
 - **Fase 3 — Gobierno y adopción:** JAVA-013 + JAVA-014 + JAVA-004 + JAVA-015.
-  CI/release, rúbrica Java, agentes que razonan, DX. **En curso:** JAVA-013
-  hecha; 013b/014/004/015 pendientes. JAVA-016 (memoria estructural) añadida
-  en Fase 4.
-- **Fase 4 — Memoria y extras:** JAVA-016 (vault + grafo determinista,
-  graphify opcional), JAVA-001b (Gradle), segunda ronda E2E. **Pendiente.**
+  CI/release, rúbrica Java, agentes que razonan y DX. **Completada.**
+- **Fase 4 — Memoria y extras:** JAVA-016 (vault + grafo determinista),
+  JAVA-001b (Gradle fase 1), segunda ronda E2E. **Completada.**
 
 Cada feature sigue el flujo SDD del arnés: backlog → `write_feature` (Gherkin)
 → `approve` (puerta humana) → TDD + evidencia → `finish` con rúbrica.

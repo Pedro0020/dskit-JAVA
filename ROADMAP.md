@@ -51,7 +51,7 @@ núcleo de gobierno intacto, RAG no se toca. Los dominios críticos
 diseñan *con* el template, no después — son los que deciden si el arnés da
 confianza real o falsa.
 
-### Plan detallado de lo pendiente (Java)
+### Historial de implementación Java
 
 > **Estado (15 Nov 2026): implementado.** 004a–d, 005c (refactor/graph
 > excluidos en Java), 012c, 013b, 014a–c, 015 y 016 están hechos y verificados
@@ -92,13 +92,10 @@ era la **coherencia de los prompts** y la capa de gobierno específica de Java.
 - `agents_reference.md`: las filas Python (data/ml/notebook) no se muestran
   en un render Java.
 
-#### JAVA-005c — Reescritura JVM de refactor y graph (hueco del SPEC §3.5) — POSPUESTA
-El SPEC lista `refactor` y `graph` entre los 10 agentes a reescribir; el
-ROADMAP solo trackeó 6. Decisión pendiente: (a) reescribirlos para Java
-(refactor: extracción de métodos/records/campos; graph: JDeps/ArchUnit) o
-(b) excluirlos en renders Java y documentar la decisión. Nota: `graph`
-(figuras ML) no tiene relación con la memoria del proyecto — la memoria va
-en JAVA-016. Hasta decidir, no cuentan como hechos.
+#### JAVA-005c — Refactor y graph
+Decisión cerrada: quedan excluidos en renders Java porque sus implementaciones
+son Python/ML-specific; la memoria estructural Java vive en JAVA-016. Sus
+contratos se conservan en `CONTRACTS` para no romper el núcleo común.
 
 #### JAVA-014a — R-criterios Java en `agents/rubric.py`
 - `CRITERIOS_REVISION` con la capa Java: transacciones (límites,
@@ -337,6 +334,87 @@ agente `plan`, que ya tiene toda la maquinaria (`needs`, `answer`, borrador).
 - Tests en `test_plan_agent.py` y `test_documentation_agent.py`: detección de
   riesgos, gate de decisión obligatoria, sembrado solo de aceptados,
   no-duplicación, PRD con riesgos
+
+### ADOPT-001..005 — Aplicar el arnés a un proyecto Java existente (hecho)
+
+Hoy el template solo **genera** proyectos (`copier copy`). Poder montar el
+arnés de gobierno/calidad sobre un Spring Boot **ya existente** es la vía de
+adopción que desbloquea el uso en código no-greenfield. Se inyecta **solo el
+plano de control** (`agents/`, `harness/`, `.opencode/`, `.claude/`, `init.sh`,
+`Makefile`, `AGENTS.md`, `CLAUDE.md`, `opencode.json`, `.gitignore`,
+`references/`) y se deja intacto `src/`/`pom.xml`/`build.gradle`/wrappers: el
+scaffold es greenfield, el arnés es el foso.
+
+| ID | Tema | Prioridad |
+|----|------|-----------|
+| ADOPT-001 | Detección del proyecto y bootstrap de `.copier-answers.yml` | P0 |
+| ADOPT-002 | Modo `adopt` en copier (render solo el arnés) | P0 |
+| ADOPT-003 | Backlog de adopción (no greenfield) | P0 |
+| ADOPT-004 | `init.sh`/Makefile/prompts coherentes con el build existente | P1 |
+| ADOPT-005 | E2E + CI | P1 |
+
+Clarificación — Spring Boot **no** es la alternativa a Spring Batch: Batch es
+una capa sobre Boot. El template distingue tres stacks (`framework`):
+`spring-boot` (web/API), `spring-boot-batch` (batch, sin web) y
+`spring-boot-web+batch` (ambos). La adopción sirve para **los tres**: el plano
+de control embarca los mismos agentes de dominio en todo render Java (el gating
+es por `language`, no por `framework`), así que `framework` solo decide qué
+backlog semilla y qué targets del Makefile tienen sentido. En un proyecto
+web-only el agente `batch` no encuentra jobs; en uno batch-only el `api` no
+encuentra controllers. La puerta es agnóstica de stack —«el build existente
+está en verde»—; las garantías de dominio (idempotencia, restartability,
+migraciones, seguridad, observabilidad) las aportan los agentes, no `init.sh`.
+
+Decisión de diseño: el modo adoptar **escribe** `.copier-answers.yml` con
+`language: java` y las variables Java detectadas — sin él, `agents/context.py`
+trata el proyecto como Python (defaults de `config.py`, `is_java=False`). La
+detección es best-effort y se confirma con el humano; `base_package` solo
+afecta a la capa del arnés (ejemplos del Makefile y prompts), no al `src/`
+que no se toca.
+
+#### ADOPT-001 — Detección y bootstrap
+- `tools/adopt.py` (raíz del repo) inspecciona un proyecto existente y emite
+  `build_tool` (pom.xml→maven, build.gradle→gradle), `java_version`
+  (`<java.version>`/`sourceCompatibility`/toolchain), `base_package` (paquete
+  dominante bajo `src/main/java`), `framework` (deps
+  `spring-boot-starter-batch` → batch, `spring-boot-starter-web` → web, ambas →
+  `web+batch`, ninguna → pregunta), `db` (driver) y `migrations`
+  (flyway/liquibase).
+- Escribe `.copier-answers.yml` en el destino con lo detectado + confirmación.
+- `--dry-run` muestra el plan sin escribir; lo no detectable se pregunta.
+- Tests contra muestras Maven y Gradle.
+
+#### ADOPT-002 — Modo `adopt` en copier
+- Variable `adopt_existing` (bool, default false) en `copier.yml`.
+- Con `adopt_existing`, `_exclude` quita el scaffold (`/src`, `/pom.xml`,
+  `/build.gradle`, `/mvnw*`, `/gradlew*`, `/.mvn`, `/gradle`, tests demo).
+- `dskit adopt <proyecto>` = detección + `copier copy --data-file`.
+- Verificación: `src/`/`pom.xml`/`build.gradle` del proyecto no se sobrescriben.
+
+#### ADOPT-003 — Backlog de adopción
+- `harness/featureslist.json` gana rama `{% if adopt_existing %}` con seed común
+  (VERIFY-001 puerta verde sobre el build existente, EVAL-001 evals verdes,
+  DOC-001 README/CHANGELOG adoptados) y la primera mejora real según
+  `framework`: `JOB-001` (restartability/idempotencia) si hay batch, `API-001`
+  (contrato HTTP) si hay web, ambas en `web+batch` — espejo del seed greenfield.
+- Los criterios referencian el build real (`./mvnw verify`/`./gradlew build`).
+- `harness next`/`finish` funcionan con este seed sin depender del demo.
+
+#### ADOPT-004 — Puerta y fachada coherentes
+- `init.sh` no exige ficheros del template; solo `src/main/java` + build file +
+  tests (ya casi es así — verificar y añadir guard).
+- Makefile/prompts usan `base_package`/`build_tool` detectados (Jinja — verificar render).
+- `make check` y `make agents-eval` verdes sobre el proyecto adoptado.
+
+#### ADOPT-005 — E2E y CI
+- E2E: adoptar dos proyectos existentes (uno web/API y uno batch) → `./init.sh`
+  verde + `make check` verde + evals del arnés verde en ambos stacks.
+- Combo `adopt` en `.github/scripts/validate_template.py` + job en CI.
+- Documentar «Adoptar un proyecto existente» en README, junto a `copier update`.
+
+Riesgos: proyecto que no compila en verde → la puerta bloquea por diseño
+(documentar «primero deja el build verde»); multi-módulo fuera de v1; no
+auto-detectar todo — entrevista explícita, no heurística mágica.
 
 ## Cerradas
 

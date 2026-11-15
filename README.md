@@ -59,6 +59,30 @@ Desde una copia local del repo:
 copier copy --trust ./dskit-JAVA mi_proyecto
 ```
 
+### Adoptar un proyecto Java existente
+
+El modo adopción instala únicamente el arnés; no genera ni reemplaza el
+`src/`, el `pom.xml`, el `build.gradle` ni los wrappers de la aplicación.
+Funciona con los tres stacks: `spring-boot` (web/API),
+`spring-boot-batch` (batch) y `spring-boot-web+batch` (ambos).
+
+```bash
+python tools/adopt.py ./mi-proyecto --dry-run
+python tools/adopt.py ./mi-proyecto
+```
+
+La detección inspecciona el build, Java, paquete base, stack, base de datos y
+migraciones, y exige confirmar explícitamente lo que no pueda detectar.
+Antes de adoptar, el proyecto debe compilar y tener tests en verde. En
+proyectos con `Makefile` propio, los targets del arnés están en `dskit.mk`:
+
+```make
+include dskit.mk
+```
+
+La adopción escribe `.copier-answers.yml` para que el arnés sepa que el
+proyecto es Java y para permitir futuras actualizaciones controladas.
+
 ## Variables
 
 | Variable | Valores | Descripción |
