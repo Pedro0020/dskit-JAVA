@@ -1,8 +1,8 @@
 # SPEC-JAVA — Arnés dskit para Java (Spring Boot / Spring Batch)
 
-Estado: propuesta (v0.1) · sin implementar
+Estado: implementada (v1) — JAVA-001..013 hechos; ver ROADMAP.md para lo
+pendiente (JAVA-001b/004/014/015).
 Backlog: JAVA-001..JAVA-015 (ver ROADMAP.md)
-Backlog y estado: ROADMAP.md
 
 ---
 

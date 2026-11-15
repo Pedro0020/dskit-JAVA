@@ -20,7 +20,10 @@ _PIPELINE_CHAIN = ["pipeline", "predict", "train", "features", "data"]
 # Fachada Java (D6 del SPEC-JAVA): un target = un comando ./mvnw. Estos son
 # los targets que el Makefile Java del template garantiza; si falta uno, la
 # fachada está rota.
-_JAVA_TARGETS = ["setup", "test", "verify", "check", "lint", "format", "clean"]
+_JAVA_TARGETS = [
+    "setup", "test", "verify", "check", "lint", "format", "clean",
+    "typecheck", "mutation", "security", "audit", "crap",
+]
 
 _TARGET_SUGGESTIONS: dict[str, list[dict]] = {
     "use_api": [

@@ -14,7 +14,7 @@ de decisión de tus agentes, no un sustituto de ellos.**
 
 - **Razonan** — `lider`, `explorer`, `implementer`, `reviewer`: markdown en
   `.opencode/agents/`. Deciden *qué* se hace, *cómo* y *cuándo está hecho*.
-- **Ejecutan** — los {{ 19 + (1 if use_rag else 0) + (1 if use_sdd else 0) + (1 if use_api else 0) + (1 if use_docker else 0) + (1 if use_integration else 0) + (1 if use_mlflow else 0) + (1 if graphify_mode != 'no' else 0) + (4 if proyecto_perfil in ['completo', 'manual'] else 0) }} agentes Python de la tabla de abajo. Acciones
+- **Ejecutan** — {% if language == 'java' %}el plano de control Python (núcleo de gobierno sin data/ml/mlflow/notebook) más los dominios Java (batch, migrations, security, api, architecture, ops).{% else %}los {{ 19 + (1 if use_rag else 0) + (1 if use_sdd else 0) + (1 if use_api else 0) + (1 if use_docker else 0) + (1 if use_integration else 0) + (1 if use_mlflow else 0) + (1 if graphify_mode != 'no' else 0) + (4 if proyecto_perfil in ['completo', 'manual'] else 0) }} agentes Python de la tabla de abajo.{% endif %} Acciones
   deterministas, sin ambigüedad. Entre ellos, `harness` es el dueño mecánico
   del backlog y del progreso.
 ```
@@ -61,6 +61,18 @@ el modelo pueda ignorar.
 | `doc` | **Documentación unificada y navegación del grafo**: busca en graphify (estructura), RAG (semántica) y vault Obsidian (notas) |
 | `harness` | **Dueño del arnés**: backlog (`harness/featureslist.json`) y progreso (`harness/progress/`); reclama/libera los ficheros que toca cada feature (`touched_files`), ordena las elegibles por dependencias, ejecuta la puerta y **rehúsa cerrar** una feature sin `init.sh` en verde y evidencia real |
 {% if use_rag %}| `rag` | **RAG semántico local**: indexa código, prompts, docs y vault en ChromaDB; busca en lenguaje natural y también indexa URLs externas |{% endif %}
+{% if language == 'java' %}
+### Dominios Java (solo en proyectos con `language: java`)
+
+| Agente | Hace |
+|--------|------|
+| `batch` | **Dueño de Spring Batch**: valida jobs (restartability, esquema BATCH_*, transacciones), los ejecuta y explica fallos |
+| `migrations` | **Dueño de db/migration**: crea `V<n>__*.sql`, valida orden y checksums, rechaza editar una migración aplicada y undo sin rollback |
+| `security` | **Dueño de Spring Security**: gate de actuator exposure, cableado JWT, literales con pinta de secreto |
+| `api` | **Revisor de la API Spring**: controllers bajo `/api/v1`, smoke del ApplicationContext |
+| `architecture` | **Dueño de ArchUnit**: límites de capas (controller→service→repository), ciclos, ejecuta los tests de arquitectura |
+| `ops` | **Dueño de la observabilidad**: Actuator, Prometheus, traceId en logs (MDC), métricas por step de batch |
+{% endif %}
 
 
 ## Workflows por dominio

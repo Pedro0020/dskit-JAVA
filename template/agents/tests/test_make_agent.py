@@ -60,7 +60,7 @@ def test_validate_missing_makefile(tmp_path):
 def _java_make_context(tmp_path):
     makefile = tmp_path / "Makefile"
     makefile.write_text("""
-.PHONY: setup test verify check lint format clean
+.PHONY: setup test verify check lint format clean typecheck mutation security audit crap
 setup:
 	@./mvnw -q dependency:go-offline
 test:
@@ -72,6 +72,16 @@ lint:
 	@./mvnw -q spotless:check
 format:
 	@./mvnw -q spotless:apply
+typecheck:
+	@./mvnw -q compile -Ptypecheck
+mutation:
+	@./mvnw pitest
+security:
+	@trivy fs .
+audit:
+	@./mvnw pmd:cpd-check
+crap:
+	@echo crap
 clean:
 	@./mvnw clean
 """)

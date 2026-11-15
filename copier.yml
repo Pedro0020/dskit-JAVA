@@ -559,7 +559,6 @@ _exclude:
   - "{% if not use_docker %}Dockerfile{% endif %}"
   - "{% if not use_docker %}docker-compose.yml{% endif %}"
   - "{% if not use_docker %}.dockerignore{% endif %}"
-  - "{% if not use_api %}agents/prompts/api_workflow.md{% endif %}"
   - "{% if not use_docker %}agents/prompts/docker_workflow.md{% endif %}"
   - "{% if not use_monitoring %}agents/prompts/monitoring_workflow.md{% endif %}"
   - "{% if not use_optuna %}agents/prompts/optuna_workflow.md{% endif %}"
@@ -591,9 +590,12 @@ _exclude:
   - "{% if not use_sdd %}agents/tests/test_mutation_agent.py{% endif %}"
   - "{% if not use_sdd %}features/*{% endif %}"
   # --- Gating de agentes por extra: el agente solo existe si su feature está activa ---
-  - "{% if not use_api %}agents/agents/api_agent.py{% endif %}"
-  - "{% if not use_api %}agents/prompts/api_agent.md{% endif %}"
-  - "{% if not use_api %}agents/tests/test_api_agent.py{% endif %}"
+  # api: en Java el agente es de dominio (Spring) y viaja siempre; en Python
+  # solo con use_api=true.
+  - "{% if language == 'python' and not use_api %}agents/agents/api_agent.py{% endif %}"
+  - "{% if language == 'python' and not use_api %}agents/prompts/api_agent.md{% endif %}"
+  - "{% if language == 'python' and not use_api %}agents/tests/test_api_agent.py{% endif %}"
+  - "{% if language == 'python' and not use_api %}agents/prompts/api_workflow.md{% endif %}"
   - "{% if not use_docker %}agents/agents/docker_agent.py{% endif %}"
   - "{% if not use_docker %}agents/prompts/docker_agent.md{% endif %}"
   - "{% if not use_docker %}agents/tests/test_docker_agent.py{% endif %}"
@@ -648,6 +650,23 @@ _exclude:
   - "{% if language == 'java' %}agents/tools/stats_tool.py{% endif %}"
   - "{% if language == 'java' %}agents/tools/sklearn_tool.py{% endif %}"
   - "{% if language == 'java' %}agents/tools/duckdb_tool.py{% endif %}"
+  # --- Dominios Java: agentes que solo existen con language == 'java' ---
+  - "{% if language != 'java' %}agents/agents/batch_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/prompts/batch_agent.md{% endif %}"
+  - "{% if language != 'java' %}agents/tests/test_batch_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/agents/migrations_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/prompts/migrations_agent.md{% endif %}"
+  - "{% if language != 'java' %}agents/tests/test_migrations_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/agents/security_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/prompts/security_agent.md{% endif %}"
+  - "{% if language != 'java' %}agents/tests/test_security_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/agents/architecture_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/prompts/architecture_agent.md{% endif %}"
+  - "{% if language != 'java' %}agents/tests/test_architecture_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/agents/ops_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/prompts/ops_agent.md{% endif %}"
+  - "{% if language != 'java' %}agents/tests/test_ops_agent.py{% endif %}"
+  - "{% if language != 'java' %}agents/tests/test_api_agent_java.py{% endif %}"
   # --- Gating por lenguaje: python (DS/ML) vs java (Spring Boot / Spring Batch) ---
   # El contenido python-only se excluye cuando language == 'java' y el arbol
   # Java (src/, pom.xml, wrapper) cuando es python. Los ficheros compartidos
@@ -681,6 +700,7 @@ _exclude:
   - "{% if language != 'java' %}/src{% endif %}"
   - "{% if language == 'java' and framework == 'spring-boot' %}src/main/java/{{ base_package_path }}/batch{% endif %}"
   - "{% if language == 'java' and 'batch' not in framework %}src/test/java/{{ base_package_path }}/DemoJobTest.java{% endif %}"
+  - "{% if language == 'java' and not use_archunit %}src/test/java/{{ base_package_path }}/ArchitectureTest.java{% endif %}"
   - "{% if language == 'java' and migrations != 'flyway' %}src/main/resources/db/migration{% endif %}"
   - "{% if language == 'java' and migrations != 'liquibase' %}src/main/resources/db/changelog{% endif %}"
 

@@ -130,6 +130,18 @@ ROUTING_BENCHMARKS: list[tuple[str, str]] = [
     ("sincroniza el grafo de conocimiento", "knowledge"),
     ("actualiza las dependencias", "dependency"),
     ("genera un workflow de CI para el proyecto", "cicd"),
+    # Dominios Java (JAVA-006..011): solo se ejecutan si el agente está
+    # registrado (renders con language=java); en Python se saltan.
+    ("valida el job de batch", "batch"),
+    ("ejecuta el job demoJob", "batch"),
+    ("crea una migración nueva", "migrations"),
+    ("valida las migraciones", "migrations"),
+    ("comprueba la exposición de actuator", "security"),
+    ("revisa los endpoints de la API", "api"),
+    ("verifica las capas de la arquitectura", "architecture"),
+    ("ejecuta los tests de arquitectura", "architecture"),
+    ("comprueba la observabilidad", "ops"),
+    ("verifica las métricas de batch", "ops"),
 ]
 
 

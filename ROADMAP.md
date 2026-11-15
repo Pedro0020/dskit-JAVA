@@ -18,15 +18,15 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-003 | Backlog semilla Java | Hecha | — |
 | JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Pendiente | P3 |
 | JAVA-005a | Fixes language-aware (commit/doctor/env/untracked) | Hecha | — |
-| JAVA-005b | Reescritura y poda de agentes (test/dependency/cicd/make/doc/plan) | Pendiente | P1 |
-| JAVA-006 | Agente `batch` | Pendiente | P2 |
-| JAVA-007 | Agente `migrations` | Pendiente | P2 |
-| JAVA-008 | Agente `security` | Pendiente | P2 |
-| JAVA-009 | Agente `api` Spring | Pendiente | P2 |
-| JAVA-010 | Agente `architecture` (ArchUnit) | Pendiente | P2 |
-| JAVA-011 | Agente `ops` / observabilidad | Pendiente | P2 |
+| JAVA-005b | Reescritura y poda de agentes (test/dependency/cicd/make/doc/plan) | Hecha | — |
+| JAVA-006 | Agente `batch` | Hecha | — |
+| JAVA-007 | Agente `migrations` | Hecha | — |
+| JAVA-008 | Agente `security` | Hecha | — |
+| JAVA-009 | Agente `api` Spring | Hecha | — |
+| JAVA-010 | Agente `architecture` (ArchUnit) | Hecha | — |
+| JAVA-011 | Agente `ops` / observabilidad | Hecha | — |
 | JAVA-012 | Pipeline de calidad JVM: JaCoCo + Spotless (fase A) | Hecha | — |
-| JAVA-012b | PIT + Error Prone + Trivy/SBOM (fase B) | Pendiente | P1 |
+| JAVA-012b | PIT + Error Prone + Trivy/SBOM (fase B) | Hecha | — |
 | JAVA-013 | CI Java del template + `smoke-java` | Hecha | — |
 | JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Pendiente | P3 |
 | JAVA-015 | DX: reviewer como PR check, IntelliJ, fricción | Pendiente | P3 |
@@ -34,8 +34,9 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | — | Segunda ronda E2E (Postgres real, JDK 21, `copier update`) | Pendiente | P4 |
 
 Hitos: **H0** completado (backlog Java, fixes language-aware, v2.0.0);
-**H1** en curso (fase A y CI hechos; faltan PIT/Trivy y poda de agentes);
-H2–H4 pendientes.
+**H1** completado (fase A + CI + fase B de calidad + poda/reescritura de
+agentes + dominios Java); H2–H4 pendientes (rúbrica Java, prompts de los
+agentes que razonan, DX, Gradle, segunda ronda E2E).
 
 Decisiones previas: plano de control Python + template Java (sin port a JVM),
 núcleo de gobierno intacto, RAG no se toca. Los dominios críticos

@@ -4,11 +4,13 @@ La cobertura por líneas no prueba que los tests sirvan: un test puede ejecutar
 una línea y no detectar que su lógica está mal. Este agente lo comprueba de
 forma determinista con dos herramientas del flujo spec-driven:
 
-- **Mutation testing** (`tools/mutate.py`): altera operadores del código de
+- **Mutation testing** ({% if language == 'java' %}PIT, `org.pitest:pitest-maven`,
+  perfil/meta `-Ppit` con `-DtargetClasses=<clase>`{% else %}`tools/mutate.py`{% endif %}): altera operadores del código de
   producción y ejecuta la suite por cada mutante. Si un mutante sobrevive,
   hay un hueco en la suite que la cobertura no ve.
 - **CRAP** (`Change Risk Anti-patterns`): `complejidad² × (1 − cobertura)³ +
-  complejidad`, por función. > 30 es la señal clásica de «complejo y mal
+  complejidad`, por {% if language == 'java' %}clase (complejidad estimada por puntos de
+  decisión — sin PMD/radon — y cobertura de JaCoCo){% else %}función{% endif %}. > 30 es la señal clásica de «complejo y mal
   probado».
 
 ## Qué hace
@@ -19,8 +21,13 @@ forma determinista con dos herramientas del flujo spec-driven:
 | Métrica CRAP de un módulo | `run mutation crap_report --target <ruta>` |
 
 ```bash
+{% if language == 'java' %}
+uv run --no-project python -m agents --json run mutation run_mutation_testing --target com.ejemplo.Servicio
+uv run --no-project python -m agents --json run mutation crap_report --target src/main/java/<paquete>/Servicio.java
+{% else %}
 uv run python -m agents --json run mutation run_mutation_testing --target {{ project_slug }}/features/build_features.py
 uv run python -m agents --json run mutation crap_report --target {{ project_slug }}/utils.py
+{% endif %}
 ```
 
 ## Cómo leer el resultado

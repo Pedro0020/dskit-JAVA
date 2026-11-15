@@ -401,4 +401,39 @@ dependencias, siguiendo la filosofía de `template/.opencode/agents/lider.md`
   (*Settings → Leave fork network*). GitHub ya no lo marca como fork
   (`fork: false`, sin parent); se conservan código e historial y la
   atribución Apache-2.0. PRs solo dentro de `Pedro0020/dskit-JAVA`.
+- **Fase 1+2 completadas (Nov 2026)** — ramas `feat/java-005b` →
+  `feat/java-012b` → `feat/java-domains` (apiladas, merge en orden):
+  - JAVA-005b: test/dependency/cicd/make/doc/plan reescritos con rama
+    `ctx.is_java`; `maven_tool.py` (wrapper, surefire, jacoco.csv,
+    mutations.xml); poda en `_exclude` de data/ml/mlflow/notebook y de sus
+    tools (pandas/numpy/scipy/sklearn/duckdb — un render Java corre con
+    `uv run --no-project` y esas deps romperían la colección de tests).
+  - JAVA-012b: perfil `-Ptypecheck` (Error Prone + NullAway con
+    `AnnotatedPackages=<base_package>`), PIT inline (`pitest-maven:1.17.0`,
+    `-DtargetClasses`), Trivy + cyclonedx en `make security`, PMD CPD en
+    `make audit`; `mutation` Java = PIT + CRAP por clase (cc estimada por
+    puntos de decisión, declarada en `data.estimated`).
+  - JAVA-006..011: agentes `batch` (validate_job/run_job/explain_failure/
+    checkpoint), `migrations` (checksums en workspace, undo exige rollback),
+    `security` (gate actuator exposure, JWT, secretos literales), `api`
+    rama Spring (`/api/v1` + contextLoads), `architecture` (check_layers +
+    tests ArchUnit), `ops` (actuator/prometheus/traceId/`@Timed`). Cada uno:
+    contrato + prompt + tests + workflow skill (`batch_workflow`...).
+  - Template: `src/test/java/<pkg>/ArchitectureTest.java` con
+    `allowEmptyShould(true)` (un render recién generado no tiene capas y el
+    test no debe tumbar `mvnw verify`); gating `{% if not use_archunit %}`.
+  - Lección `AgentResult.__bool__`: devuelve `success`, así que el patrón
+    `if guard: return guard` NO detecta el guard de fallo — usar
+    `if guard is not None:` (bug real cazado por los tests).
+  - Lección routing: capabilities comparten vocabulario entre dominios
+    (`actuator` security/ops, `dependencias` architecture/dependency,
+    `metricas` ops/ml) — el test de colisiones exige que cada keyword sola
+    rutee a su dueño; las frases largas ganan por palabras cubiertas, no
+    por subcadena.
+  - E2E verificada: render Java (copier a tmp sin .git) → evals del arnés
+    PASS (harness 14/14, routing 43/43, contracts), `init.sh --quick`
+    ENTORNO LISTO, prompts_sync en verde tras `--write`; render Python sin
+    regresión (routing 36/36, data/ml presentes, dominios Java ausentes).
+  - Prompt de `api_agent.md` en Java: el smoke por HTTP (`/actuator/health`)
+    es del E2E; el smoke determinista del agente es `ApplicationTests`.
 

@@ -289,8 +289,8 @@ CONTRACTS: dict[str, Contract] = {
     "mutation": Contract(
         role="Mutation testing y CRAP: comprueba que los tests «muerden» y mide el riesgo de cambio.",
         can=(
-            "ejecutar tools/mutate.py sobre un módulo y resumir killed/survived/score",
-            "calcular la métrica CRAP por función (complejidad ciclomática × cobertura)",
+            "ejecutar tools/mutate.py sobre un módulo (Python) o PIT sobre una clase (Java) y resumir killed/survived/score",
+            "calcular la métrica CRAP por función (Python, radon) o por clase (Java, complejidad estimada + JaCoCo)",
         ),
         cannot=(
             "arreglar los tests que fallan ni añadir tests él mismo → implementer/reviewer",
@@ -484,13 +484,86 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=(),
     ),
     "api": Contract(
-        role="Revisor de la API FastAPI (solo con use_api=true): endpoints vs docs + smoke test.",
-        can=("cruzar endpoints declarados contra documentados, smoke test con TestClient",),
+        role="Revisor de la API (FastAPI en Python, Spring en Java): endpoints vs docs + smoke test.",
+        can=(
+            "cruzar endpoints declarados contra documentados (Python) o contra el versionado /api/v1 (Java)",
+            "smoke test (TestClient en Python, contextLoads en Java)",
+        ),
         cannot=(
-            "modificar api/main.py — reporta discrepancias",
+            "modificar api/main.py o los controllers — reporta discrepancias",
             "desplegar la API",
         ),
         collaborates=("test",),
+    ),
+    # ── Dominios Java (language == 'java') ─────────────────────────────────
+    "batch": Contract(
+        role="Dueño del dominio Spring Batch: valida jobs (restartability, idempotencia, transacciones), los ejecuta y explica fallos.",
+        can=(
+            "validar la config de jobs (autorun, esquema BATCH_*, steps chunk/tasklet)",
+            "ejecutar un job con spring-boot:run -Dspring-batch.job.name=<job>",
+            "explicar fallos conocidos de JobExecution/StepExecution",
+        ),
+        cannot=(
+            "tocar entidades de dominio → migrations/implementer",
+            "modificar el código de los jobs — reporta, el implementer decide",
+        ),
+        needs=("el nombre del job, para ejecutarlo",),
+        owns=("src/main/java/**/batch/",),
+        collaborates=("migrations", "ops"),
+    ),
+    "migrations": Contract(
+        role="Dueño de las migraciones Flyway/Liquibase: las crea, valida orden y checksums, y rechaza editar una ya aplicada.",
+        can=(
+            "crear migraciones V<n>__*.sql con numeración creciente",
+            "validar nombres, versiones y checksums (workspace agents/workspace/migrations/)",
+            "exigir un script de rollback antes de cualquier undo destructivo",
+        ),
+        cannot=(
+            "editar una migración ya registrada (checksum) — hay que crear V<n+1>",
+            "ejecutar undo destructivo sin rollback previo",
+            "tocar el código de la app → refactor/implementer",
+        ),
+        needs=("el nombre de la migración, para crearla",),
+        owns=("src/main/resources/db/migration/", "src/main/resources/db/changelog/"),
+        collaborates=("batch",),
+        destructive=("create",),
+    ),
+    "security": Contract(
+        role="Dueño de la config de Spring Security y del gate de actuator exposure. Solo lee y reporta.",
+        can=(
+            "verificar que los endpoints sensibles de actuator no queden expuestos en producción",
+            "verificar el cableado JWT (resource-server + issuer)",
+            "escanear literales con pinta de secreto en application*.yml",
+        ),
+        cannot=(
+            "rotar ni borrar secretos — decisión del humano (colabora con secrets)",
+            "editar la config de seguridad — reporta, el humano decide",
+        ),
+        collaborates=("secrets",),
+    ),
+    "architecture": Contract(
+        role="Dueño de la arquitectura (ArchUnit): límites de capas, dependencias y ciclos.",
+        can=(
+            "detectar estáticamente violaciones de capas (controller→repository directo)",
+            "verificar que existe el test ArchUnit del template y ejecutarlo",
+        ),
+        cannot=(
+            "modificar código para arreglar la violación — reporta, el implementer decide",
+            "definir las reglas de negocio — las capas las fija el template",
+        ),
+        collaborates=("test",),
+    ),
+    "ops": Contract(
+        role="Dueño de la observabilidad: Actuator, Micrometer/Prometheus, logging con traceId y métricas de batch.",
+        can=(
+            "verificar el cableado actuator/prometheus/health/traceId",
+            "verificar métricas por step de batch (@Timed/MeterRegistry)",
+        ),
+        cannot=(
+            "inventar health checks — sin health real no se cierra una feature (rúbrica)",
+            "tocar código de negocio para instrumentarlo — reporta, el implementer decide",
+        ),
+        collaborates=("batch",),
     ),
     "secrets": Contract(
         role="Escáner de secretos hardcodeados. Solo lee y reporta.",

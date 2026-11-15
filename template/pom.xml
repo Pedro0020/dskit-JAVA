@@ -24,6 +24,10 @@
 {% endif %}
     <jacoco.version>0.8.12</jacoco.version>
     <spotless.version>2.43.0</spotless.version>
+    <!-- Perfil -Ptypecheck: Error Prone + NullAway (revisar versiones
+         periódicamente — suelen requerir el JDK reciente). -->
+    <errorprone.version>2.36.0</errorprone.version>
+    <nullaway.version>0.12.6</nullaway.version>
     <!-- Umbral de cobertura (0.80 = 80%). Configurable por CLI:
          ./mvnw verify -Dcoverage.min=0.70 -->
     <coverage.min>0.80</coverage.min>
@@ -221,4 +225,38 @@
       </plugin>
     </plugins>
   </build>
+
+  <!-- Fase B del pipeline de calidad (JAVA-012b). Fuera del build por
+       defecto a propósito: Error Prone + NullAway son lentos y estrictos,
+       y PIT más aún — se activan con `make typecheck` / `make mutation`. -->
+  <profiles>
+    <profile>
+      <id>typecheck</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <compilerArgs>
+                <arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:AnnotatedPackages={{ base_package }}</arg>
+              </compilerArgs>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>com.uber.nullaway</groupId>
+                  <artifactId>nullaway</artifactId>
+                  <version>${nullaway.version}</version>
+                </path>
+                <path>
+                  <groupId>com.google.errorprone</groupId>
+                  <artifactId>error_prone_core</artifactId>
+                  <version>${errorprone.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>

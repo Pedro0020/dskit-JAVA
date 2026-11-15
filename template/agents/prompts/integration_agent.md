@@ -33,5 +33,10 @@ requiere Docker, así que:
 - escribir tests nuevos ni decidir qué probar → implementer/reviewer
 - arreglar los tests que fallan → refactor (código) o el humano
 - analizar/lint Dockerfiles o compose de producción → docker
+- levantar servicios si el proyecto se generó sin use_docker/use_integration — devuelve needs
+
+**Necesita que le den:** Docker disponible en el sistema; que exista tests/compose.integration.yml (extra use_integration); el motor de contenedores de use_docker activo
+
+**Se apoya en:** test, docker
 
 <!-- END AUTOGEN -->
