@@ -7,7 +7,8 @@ Instrucciones, correcciones y preferencias guardadas por el usuario para recorda
 ## Flujo de trabajo (Nov 2026)
 
 - **Una rama por tarea**: crear `feat/…`, `fix/…` o `chore/…` desde `main`; nunca trabajar directamente en `main`.
-- **Al terminar**: push de la rama y abrir PR. Si `gh` no está instalado, dar la URL de compare de GitHub.
+- **PR solo dentro del fork**: base `Pedro0020/dskit-JAVA`, nunca contra el upstream `cacelass/dskit`. En un fork, el enlace `/pull/new/<rama>` apunta por defecto al padre: usar `/compare/main...<rama>?expand=1`.
+- **Al terminar**: push de la rama y PR en el fork; si no hay `gh`, dar la URL de compare del propio repo. También vale merge local a `main` sin PR si se pide.
 - Los documentos de planificación de una sesión (planes, informes E2E) no se acumulan en la raíz: lo accionable va a `ROADMAP.md`, lo duradero a `SPEC-JAVA.md` y el resto queda en el historial de git.
 
 ## Commits

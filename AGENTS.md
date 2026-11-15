@@ -14,7 +14,7 @@
 - **Read before edit.** Always read a file before editing it.
 - **Verify your work.** Run lint/typecheck/tests after changes.
 - **Commit discipline.** Only commit when explicitly asked. Don't force-push. Write concise commit messages matching repo style.
-- **Branch per task.** Create a `feat/…`, `fix/…` or `chore/…` branch from `main`; when done, push it and open a PR (or provide the GitHub compare URL if `gh` is unavailable).
+- **Branch per task.** Create a `feat/…`, `fix/…` or `chore/…` branch from `main`. Open PRs **only inside this fork** (base `Pedro0020/dskit-JAVA`), never against the upstream `cacelass/dskit`. On a fork, `/pull/new/<branch>` defaults to the parent: use `/compare/main...<branch>?expand=1` instead.
 - **Security.** Never log, expose, or commit secrets or keys.
 - **Proactive but not surprising.** Do the right thing, but don't take actions without explanation.
 
