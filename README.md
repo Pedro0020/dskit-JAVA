@@ -155,8 +155,9 @@ make agents-eval     # harness + contracts
 | JAVA-002 — puerta `./mvnw verify` + `contextLoads` | Hecha |
 | JAVA-003 — backlog semilla Java | Hecha |
 | JAVA-005a — agentes language-aware (commit/doctor/env) | Hecha |
-| JAVA-005b..011 — agentes Java: test/dependency/cicd/make/doc/plan, batch, migrations, security, api, architecture, observabilidad | Pendiente |
-| JAVA-012 — pipeline de calidad (JaCoCo + Spotless hechos; PIT/Trivy pendientes) | En curso |
+| JAVA-005b — reescritura JVM de test/dependency/cicd/make/doc/plan + poda data/ml/mlflow/notebook | Hecha |
+| JAVA-006..011 — dominios Java: batch, migrations, security, api Spring, architecture (ArchUnit), ops/observabilidad | Hecha |
+| JAVA-012 — pipeline de calidad JVM: JaCoCo + Spotless + PIT + Error Prone/NullAway + Trivy/SBOM | Hecha |
 | JAVA-013 — CI del template Java + `smoke-java` | Hecha |
 
 Alcance y criterios: [SPEC-JAVA.md](SPEC-JAVA.md) · estado y prioridades:
@@ -166,7 +167,8 @@ El árbol Python original de la plantilla sigue disponible con
 `language: python`, pero este fork no lo mantiene como foco.
 
 **Verificado:** render `estandar` Java → `./init.sh` verde, `./mvnw verify`
-verde, `harness` eval 14/14 y `contracts` PASS.
+verde, evals del arnés sobre el render Java **PASS** (harness 14/14, routing
+43/43, contracts) y render Python sin regresión (routing 36/36).
 
 ## Créditos y origen
 
