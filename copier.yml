@@ -625,6 +625,29 @@ _exclude:
   - "{% if proyecto_perfil in ['minimo', 'estandar'] %}agents/prompts/audit_agent.md{% endif %}"
   - "{% if proyecto_perfil in ['minimo', 'estandar'] %}agents/tests/test_audit_agent.py{% endif %}"
   - "{% if proyecto_perfil in ['minimo', 'estandar'] %}agents/tests/test_audit.py{% endif %}"
+  - "{% if language == 'java' %}agents/agents/data_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/data_agent.md{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_data_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/agents/ml_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/ml_agent.md{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_ml_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/agents/mlflow_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/mlflow_agent.md{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_mlflow_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/mlflow_tool.py{% endif %}"
+  - "{% if language == 'java' %}agents/agents/notebook_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/notebook_agent.md{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_notebook_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/notebook_tool.py{% endif %}"
+  # Herramientas DS/ML (pandas/numpy/scipy/sklearn/duckdb): en un render Java
+  # el plano de control corre con `uv run --no-project` (sin esas deps), así
+  # que sus módulos y tests romperían la colección de pytest.
+  - "{% if language == 'java' %}agents/tools/data_io_tool.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/dataframe_analysis_tool.py{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_dataframe_analysis_tool.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/stats_tool.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/sklearn_tool.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/duckdb_tool.py{% endif %}"
   # --- Gating por lenguaje: python (DS/ML) vs java (Spring Boot / Spring Batch) ---
   # El contenido python-only se excluye cuando language == 'java' y el arbol
   # Java (src/, pom.xml, wrapper) cuando es python. Los ficheros compartidos

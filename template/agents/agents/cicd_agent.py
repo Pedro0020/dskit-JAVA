@@ -103,12 +103,18 @@ class CICDAgent(BaseAgent):
                 f"Ya existe '{destination.relative_to(self.ctx.root)}'. Usa overwrite=True para sobreescribirlo.",
             )
 
-        version = python_version or self.ctx.config.python_version
-        module = self.ctx.config.project_slug
-        if not module:
-            return AgentResult(False, self.name, "generate_workflow", "project_slug está vacío — revisa .copier-answers.yml.")
+        if self.ctx.is_java:
+            from agents.tools.cicd_tool import generate_ci_yaml_java
 
-        yaml_content = CICDTool.generate(module=module, python_version=version)
+            java_version = str(self.ctx.config.extra.get("java_version", "17"))
+            yaml_content = generate_ci_yaml_java(java_version=java_version)
+        else:
+            version = python_version or self.ctx.config.python_version
+            module = self.ctx.config.project_slug
+            if not module:
+                return AgentResult(False, self.name, "generate_workflow", "project_slug está vacío — revisa .copier-answers.yml.")
+
+            yaml_content = CICDTool.generate(module=module, python_version=version)
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(yaml_content, encoding="utf-8")
 

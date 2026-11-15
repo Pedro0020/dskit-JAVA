@@ -52,3 +52,56 @@ def test_validate_missing_makefile(tmp_path):
     agent = MakeAgent(context=ctx)
     result = agent.validate()
     assert not result.success
+
+
+# ─── Rama Java: fachada sobre ./mvnw ────────────────────────────────────────
+
+
+def _java_make_context(tmp_path):
+    makefile = tmp_path / "Makefile"
+    makefile.write_text("""
+.PHONY: setup test verify check lint format clean
+setup:
+	@./mvnw -q dependency:go-offline
+test:
+	@./mvnw test
+verify:
+	@./mvnw verify
+check: verify
+lint:
+	@./mvnw -q spotless:check
+format:
+	@./mvnw -q spotless:apply
+clean:
+	@./mvnw clean
+""")
+    return SharedContext(root=tmp_path, config=ProjectConfig(project_slug="x", extra={"language": "java"}))
+
+
+def test_java_validate_fachada_completa(tmp_path):
+    agent = MakeAgent(context=_java_make_context(tmp_path))
+    result = agent.validate()
+    assert result.success
+
+
+def test_java_validate_falla_si_faltan_targets(tmp_path):
+    ctx = _java_make_context(tmp_path)
+    (ctx.root / "Makefile").write_text(".PHONY: test\ntest:\n\t@echo hola\n")
+    agent = MakeAgent(context=ctx)
+    result = agent.validate()
+    assert not result.success
+    assert any("verify" in w for w in result.warnings)
+
+
+def test_java_check_pipeline_chain_usa_fachada(tmp_path):
+    agent = MakeAgent(context=_java_make_context(tmp_path))
+    result = agent.check_pipeline_chain()
+    assert result.success
+    assert "verify" in result.data["found"]
+
+
+def test_java_suggest_targets_completa_sin_sugerencias(tmp_path):
+    agent = MakeAgent(context=_java_make_context(tmp_path))
+    result = agent.suggest_targets()
+    assert result.success
+    assert result.data["suggested"] == []

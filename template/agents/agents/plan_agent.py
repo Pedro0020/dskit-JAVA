@@ -99,6 +99,40 @@ _BACKLOG_DIRECCION: tuple[dict, ...] = (
      "depends_on": ["FEAT-001"]},
 )
 
+#: Versión Java del rumbo: mismo esqueleto (SCOPE → RESEARCH), pero los
+#: pasos de datos/modelo se sustituyen por dominio, migraciones y API — los
+#: dominios de primera clase del template Java (D4 del SPEC-JAVA).
+_BACKLOG_DIRECCION_JAVA: tuple[dict, ...] = (
+    {"id": "SCOPE-001", "title": "Definir qué se quiere resolver",
+     "description": "Escribir en references/00-objetivo.md qué problema resuelve este servicio Java, "
+                    "cómo se mide que lo resuelve (umbral numérico), con qué datos cuenta y "
+                    "cuándo se da por terminado.",
+     "criteria": ["references/00-objetivo.md con los apartados del spec",
+                  "La métrica de éxito es un número con umbral, no 'que funcione bien'",
+                  "El criterio de parada dice qué resultado haría abandonar el proyecto"],
+     "depends_on": []},
+    {"id": "RESEARCH-001", "title": "Qué se sabe ya sobre este problema",
+     "description": "Reunir el estado del arte antes de improvisar una arquitectura: qué enfoques se usan, qué métricas reporta la literatura y qué se descarta.",
+     "criteria": ["references/01-estado-del-arte.md resume cada fuente en 2-3 líneas",
+                  "Queda anotado el rango de resultados que reporta la literatura"],
+     "depends_on": ["SCOPE-001"]},
+    {"id": "DB-001", "title": "Modelo de datos y migraciones",
+     "description": "Definir el modelo de dominio y su primera migración (Flyway/Liquibase): entidades, constraints y la semilla mínima.",
+     "criteria": ["La migración se aplica limpiamente en base vacía (./mvnw flyway:validate o verify)",
+                  "El modelo cubre las entidades del caso de uso principal"],
+     "depends_on": ["RESEARCH-001"]},
+    {"id": "FEAT-001", "title": "Caso de uso principal con tests",
+     "description": "Implementar el caso de uso principal (service + repository) con tests de unidad y de contexto.",
+     "criteria": ["./mvnw verify en verde con el caso de uso cubierto",
+                  "Las transacciones tienen límites explícitos (@Transactional en el service)"],
+     "depends_on": ["DB-001"]},
+    {"id": "API-001", "title": "API del caso de uso",
+     "description": "Exponer el caso de uso como endpoint REST versionado (/api/v1) con DTOs validados.",
+     "criteria": ["Endpoint bajo /api/v1 con Bean Validation",
+                  "Smoke: el contexto arranca y /actuator/health responde"],
+     "depends_on": ["FEAT-001"]},
+)
+
 #: Comparadores que hacen que una métrica sea "numérica con umbral".
 _METRICA_COMPARADOR = re.compile(r"(>=|<=|>|<|=)\s*\d+(?:[.,]\d+)?")
 
@@ -290,7 +324,8 @@ class PlanAgent(BaseAgent):
 
         harness = HarnessAgent(context=self.ctx)
         sembrados: list[str] = []
-        for feat in _BACKLOG_DIRECCION:
+        direccion = _BACKLOG_DIRECCION_JAVA if self.ctx.is_java else _BACKLOG_DIRECCION
+        for feat in direccion:
             result = harness.add(
                 id=feat["id"], title=feat["title"], description=feat["description"],
                 criteria=";".join(feat["criteria"]),
