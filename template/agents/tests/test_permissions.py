@@ -13,7 +13,6 @@ import pytest
 
 from agents import audit, permissions
 from agents.agents.git_agent import GitAgent
-from agents.agents.refactor_agent import RefactorAgent
 from agents.contracts import CONTRACTS
 from agents.core.base_agent import AgentResult
 
@@ -136,6 +135,14 @@ def test_run_deja_pasar_con_confirm(context, monkeypatch):
 
 
 def test_refactor_tambien_esta_detras_de_la_puerta(context):
+    from agents.core.registry import agent_registry
+
+    # `refactor` es Python-only: en un render Java no existe y el invariante
+    # de la puerta ya lo cubre `git` en los otros tests.
+    if "refactor" not in agent_registry.all():
+        return
+    from agents.agents.refactor_agent import RefactorAgent
+
     resultado = RefactorAgent(context=context).run("fix_bare_excepts")
     assert not resultado.success
     assert "NO se ha ejecutado" in resultado.message

@@ -1,9 +1,0 @@
-{
-  "alwaysUpdateLinks": true,
-  "attachmentFolderPath": "./",
-  "newFileLocation": "current",
-  "showUnsupportedFiles": true,
-  "spellcheck": true,
-  "useMarkdownLinks": true,
-  "showFrontmatter": true
-}

@@ -40,7 +40,7 @@ STD = dict(
 )
 
 DEFAULTS = dict(
-    language="python",
+    language="java",
     proyecto_perfil="estandar",
     ml_type="supervisado",
     task_type="clasificacion",
@@ -104,47 +104,6 @@ JAVA_ONLY = {
 # variables; estos van fijos porque fallaron por interacciones de 3+ y no hay
 # garantia de que el generador los reproduzca.
 PINNED: list[tuple[str, dict]] = [
-    # Encontro 12 errores de lint que la matriz elegida a mano no veia.
-    (
-        "pinned:todo-activado",
-        dict(
-            ml_type="supervisado",
-            task_type="clasificacion",
-            use_mlflow=True,
-            use_optuna=True,
-            use_duckdb=True,
-            use_api=True,
-            use_docker=True,
-            use_shap=True,
-            use_xgboost=True,
-            use_lightgbm=True,
-            use_catboost=True,
-            use_monitoring=True,
-            use_rag=True,
-            use_sdd=True,
-            use_integration=True,
-            use_conformal=True,
-            use_mcp=True,
-            use_demo=True,
-            # Todos los servidores a la vez: es el unico combo donde el
-            # generador de .mcp.json y de opencode.json tiene que encadenar
-            # varias entradas, que es donde se cuela una coma de mas.
-            # Tupla y no lista: el informe de cobertura mete cada valor en un
-            # set, y una lista no es hasheable.
-            mcp_servers=(
-                "filesystem (acotado a data/ y reports/)",
-                "git (historial y diffs en solo lectura)",
-                "fetch (descarga paginas web — CONTENIDO NO CONFIABLE)",
-                "sqlite (consulta bases SQLite de data/)",
-                "time (fecha y hora, zonas horarias)",
-            ),
-            graphify_mode="graphify + obsidian vault",
-        ),
-    ),
-    # hibrido+regresion entrenaba clasificadores sobre un target continuo.
-    ("pinned:hibrido-regresion", dict(ml_type="hibrido", task_type="regresion")),
-    # Minimo absoluto: todo apagado.
-    ("pinned:minimo", dict(ml_type="supervisado", task_type="clasificacion")),
     # Java estandar: batch con H2, sin seguridad/observabilidad.
     (
         "pinned:java-estandar",
@@ -198,8 +157,14 @@ PINNED: list[tuple[str, dict]] = [
     ),
 ]
 
-#: Variables cuyas condiciones `when:` gobiernan al resto.
-DRIVERS = ["ml_type"]
+#: Variables que ramifican la matriz en esta versión Java-only. Las variables
+#: Python (ml_type, use_optuna, ...) siguen en copier.yml porque los prompts
+#: compartidos las referencian, pero ya no generan ramas: sus `when:` apuntan
+#: a language == 'python' (imposible) y el árbol Python se eliminó.
+MATRIZ_VARS = {"use_rag", "use_sdd"}
+
+#: Variables cuyas condiciones `when:` gobiernan al resto (ninguna en Java-only).
+DRIVERS: list[str] = []
 
 _SUP_HIB = {"supervisado", "hibrido"}
 _SOLO_SUP_HIB = ("model_type", "use_shap", "use_xgboost", "use_lightgbm", "use_catboost")
@@ -247,6 +212,8 @@ def variables_de_copier() -> tuple[dict[str, list], dict]:
             continue
         if nombre == "proyecto_perfil" or nombre == "language" or nombre in JAVA_ONLY:
             continue
+        if nombre not in MATRIZ_VARS:
+            continue
         if "choices" in spec:
             valores = list(spec["choices"])
         elif spec["type"] == "bool":
@@ -270,7 +237,7 @@ def construir_combos() -> list[tuple[str, dict]]:
 
     variables, defaults = variables_de_copier()
     generados = generate(variables, defaults, aplica, DRIVERS)
-    claves = ["ml_type", "task_type", "graphify_mode"]
+    claves = ["use_rag", "use_sdd"]
     combos = [(f"{i:03d}:{etiqueta(c, claves)}", c) for i, c in enumerate(generados)]
     return PINNED + combos
 

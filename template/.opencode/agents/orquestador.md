@@ -92,9 +92,9 @@ Carga el skill del agente solo cuando necesites su acción exacta:
 - `skill dependency_agent` → paquetes
 - `skill secrets_agent` → secretos
 - `skill cicd_agent` → CI/CD
-- `skill env_agent` → entorno{% if language == 'java' %} (JDK/wrapper Maven){% else %} Python{% endif %}
-- `skill refactor_agent` → refactorizar
-- `skill make_agent` → Makefile
+- `skill env_agent` → entorno{% if language == 'java' %} (JDK/wrapper){% else %} Python{% endif %}
+{% if language != 'java' %}- `skill refactor_agent` → refactorizar
+{% endif %}- `skill make_agent` → Makefile
 {% if language != 'java' %}
 - `skill notebook_agent` → Jupyter
 - `skill graph_agent` → figuras

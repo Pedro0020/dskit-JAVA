@@ -131,7 +131,8 @@ class SecurityAgent(BaseAgent):
         if not pom.exists():
             return AgentResult(False, self.name, "check_jwt", "No existe pom.xml.")
         texto = pom.read_text(encoding="utf-8", errors="replace")
-        tiene_starter = "oauth2-resource-server" in texto or "spring-boot-starter-security" in texto
+        security = "spring-boot-starter-security" in texto
+        resource_server = "oauth2-resource-server" in texto
 
         issuer = False
         for path in self._resources_yml():
@@ -139,14 +140,28 @@ class SecurityAgent(BaseAgent):
             if re.search(r"issuer-uri:|jwt:", yml):
                 issuer = True
 
-        ok = tiene_starter and issuer
+        # Sin resource-server el proyecto no declara JWT: es una elección, no
+        # un fallo (el starter de seguridad por sí solo no implica JWT).
+        if not resource_server:
+            return AgentResult(
+                True, self.name, "check_jwt",
+                "Sin JWT declarado (no hay oauth2-resource-server) — Spring Security "
+                "se configura por otra vía." if security else "Sin Spring Security: JWT no aplica.",
+                data={"security": security, "resource_server": False, "issuer": issuer},
+                warnings=[] if not security else [
+                    "Spring Security presente sin resource-server: si el proyecto exige JWT, "
+                    "añade spring-boot-starter-oauth2-resource-server y el issuer-uri."
+                ],
+            )
+
+        ok = resource_server and issuer
         return AgentResult(
             ok, self.name, "check_jwt",
-            f"JWT {'cableado' if ok else 'incompleto'}: starter={tiene_starter}, issuer={issuer}.",
-            data={"starter": tiene_starter, "issuer": issuer},
+            f"JWT {'cableado' if ok else 'incompleto'}: resource-server={resource_server}, issuer={issuer}.",
+            data={"security": security, "resource_server": resource_server, "issuer": issuer},
             warnings=[] if ok else [
-                "El proyecto usa Spring Security pero falta el starter oauth2-resource-server o el issuer-uri JWT."
-            ] if tiene_starter else ["Sin starter de seguridad — JWT no aplica."],
+                "oauth2-resource-server presente pero falta el issuer-uri (o jwt) en application*.yml."
+            ],
         )
 
     def scan_hardcoded_secrets(self) -> AgentResult:

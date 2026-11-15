@@ -686,7 +686,7 @@ typecheck:
 {% if build_tool == 'maven' %}
 	@$(MVNW) -q compile -Ptypecheck
 {% else %}
-	@echo "  (typecheck Error Prone/NullAway es Maven-first; Gradle: JAVA-001b fase 2)"
+	@echo "  (typecheck Error Prone/NullAway en Gradle llega en la fase 2 de JAVA-001b)"
 {% endif %}
 
 mutation:
@@ -695,7 +695,7 @@ mutation:
 	@$(MVNW) org.pitest:pitest-maven:1.17.0:mutationCoverage \
 		-DtargetClasses=$(TARGET) -DoutputFormats=XML,HTML
 {% else %}
-	@echo "  (PIT en Gradle es JAVA-001b fase 2; usa ./gradlew pitest con el plugin)"
+	@echo "  (PIT en Gradle llega en la fase 2 de JAVA-001b)"
 {% endif %}
 
 security:
@@ -706,14 +706,14 @@ security:
 	@$(MVNW) -q org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom || true
 	@echo "  SBOM en target/ (bom.json)"
 {% else %}
-	@echo "  (SBOM cyclonedx en Gradle es JAVA-001b fase 2)"
+	@echo "  (SBOM cyclonedx en Gradle llega en la fase 2 de JAVA-001b)"
 {% endif %}
 
 audit:
 {% if build_tool == 'maven' %}
 	@$(MVNW) -q org.apache.maven.plugins:maven-pmd-plugin:3.25.0:cpd-check || true
 {% else %}
-	@echo "  (CPD en Gradle es JAVA-001b fase 2)"
+	@echo "  (CPD en Gradle llega en la fase 2 de JAVA-001b)"
 {% endif %}
 
 crap:
@@ -726,9 +726,9 @@ migrations:
 batch-run:
 	@test -n "$(JOB)" || (echo "  usa: make batch-run JOB=demoJob" && exit 1)
 {% if build_tool == 'maven' %}
-	@$(MVNW) spring-boot:run -Dspring-batch.job.name=$(JOB)
+	@$(MVNW) spring-boot:run "-Dspring-boot.run.arguments=--spring.batch.job.name=$(JOB) --spring.main.web-application-type=none"
 {% else %}
-	@$(MVNW) -q bootRun --args="--spring.batch.job.name=$(JOB)"
+	@$(MVNW) -q bootRun --args="--spring.batch.job.name=$(JOB) --spring.main.web-application-type=none"
 {% endif %}
 
 context-check:

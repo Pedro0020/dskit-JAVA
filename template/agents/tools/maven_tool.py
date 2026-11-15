@@ -95,6 +95,15 @@ class MavenTool:
         return root / "target" / "pit-reports"
 
     @classmethod
+    def run_job_goals(cls, job: str) -> list[str]:
+        """
+        Goals para ejecutar un job de batch **headless** (la app web no se
+        queda escuchando; el proceso sale al terminar el job).
+        """
+        args = f"--spring.batch.job.name={job} --spring.main.web-application-type=none"
+        return ["spring-boot:run", f"-Dspring-boot.run.arguments={args}"]
+
+    @classmethod
     def _translate_gradle(cls, goals: list[str]) -> list[str]:
         if not goals:
             return goals
@@ -112,8 +121,10 @@ class MavenTool:
                     translated.append("-PfailIfNoTests=false")
             return [a for a in translated if a]
         if head == "spring-boot:run":
-            args = [f"--{a[2:]}" for a in rest if a.startswith("-D")]
-            return ["bootRun", f"--args={' '.join(args)}"] if args else ["bootRun"]
+            for arg in rest:
+                if arg.startswith("-Dspring-boot.run.arguments="):
+                    return ["bootRun", f"--args={arg.split('=', 1)[1]}"]
+            return ["bootRun"]
         if head == "compile" and "-Ptypecheck" in rest:
             raise MissingDependencyError(
                 "El typecheck (Error Prone/NullAway) es Maven-first; en Gradle llega en JAVA-001b fase 2."

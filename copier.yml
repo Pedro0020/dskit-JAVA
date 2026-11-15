@@ -7,15 +7,15 @@
 _answers_file: .copier-answers.yml
 
 # --- Lenguaje del proyecto ---
-# "python" genera el template de Data Science / ML (comportamiento actual,
-# sin cambios). "java" genera un backend Spring Boot / Spring Batch.
+# Esta versión es Java-only: el árbol Python original se eliminó (ROADMAP).
+# `language` se conserva como variable fija para no romper los condicionales
+# compartidos ni los .copier-answers.yml existentes.
 language:
   type: str
-  help: "Lenguaje del proyecto: python (Data Science / ML) | java (backend Spring Boot / Spring Batch)"
+  help: "Lenguaje del proyecto (Java: backend Spring Boot / Spring Batch)"
   choices:
-    - python
     - java
-  default: python
+  default: java
 
 # --- Perfil de proyecto ---
 # Controla qué extras y qué agentes se instalan. Los perfiles automáticos
@@ -679,6 +679,16 @@ _exclude:
   - "{% if language == 'java' %}agents/prompts/data_workflow.md{% endif %}"
   - "{% if language == 'java' %}agents/prompts/ml_workflow.md{% endif %}"
   - "{% if language == 'java' %}agents/prompts/rag_workflow.md{% endif %}"
+  # 005c — decisión: refactor y graph son Python-only (figuras ML / type hints).
+  # En un render Java no aportan: sus contratos permanecen en CONTRACTS.
+  - "{% if language == 'java' %}agents/agents/refactor_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/refactor_agent.md{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_refactor_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_refactor_scope.py{% endif %}"
+  - "{% if language == 'java' %}agents/agents/graph_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/prompts/graph_agent.md{% endif %}"
+  - "{% if language == 'java' %}agents/tests/test_graph_agent.py{% endif %}"
+  - "{% if language == 'java' %}agents/tools/vision_tool.py{% endif %}"
   # --- Gating por lenguaje: python (DS/ML) vs java (Spring Boot / Spring Batch) ---
   # El contenido python-only se excluye cuando language == 'java' y el arbol
   # Java (src/, pom.xml, wrapper) cuando es python. Los ficheros compartidos
