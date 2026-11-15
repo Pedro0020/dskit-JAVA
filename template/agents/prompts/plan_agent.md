@@ -52,9 +52,11 @@ entrevista, lo genera `documentation update_prd` desde el spec + backlog:
   o `descartar_riesgos="..."`. Sin decisión, `scope_commit` NO siembra.
 - `plan scope_commit` → REHÚSA si faltan las obligatorias o si hay riesgos
   detectados sin decidir. Escribe `references/00-objetivo.md` con el spec
-  enriquecido y siembra el backlog en orden lógico (SCOPE-001 → RESEARCH-001 →
-  EDA-001 → DATA-001 → FEAT-001 → MODEL-001, después las propuestas y los
-  riesgos aceptados como RISK-NNN), delegando en `harness add` (idempotente).
+  enriquecido y siembra el backlog en orden lógico
+  ({% if language == 'java' %}SCOPE-001 → RESEARCH-001 → DB-001 → FEAT-001 →
+  API-001{% else %}SCOPE-001 → RESEARCH-001 → EDA-001 → DATA-001 → FEAT-001 →
+  MODEL-001{% endif %}, después las propuestas y los riesgos aceptados como
+  RISK-NNN), delegando en `harness add` (idempotente).
 
 <!-- BEGIN AUTOGEN — lo regenera `make prompts-sync`; no lo edites a mano -->
 
@@ -67,8 +69,8 @@ entrevista, lo genera `documentation update_prd` desde el spec + backlog:
 | `run plan execute` | `--order` (obligatorio) · `--auto_commit` |
 | `run plan status` | `--order` |
 | `run plan scope` | `--reset` |
-| `run plan scope_answer` | `--pregunta --metrica --datos --parada --usuarios --alcance --riesgos --features --aceptar_riesgos --descartar_riesgos` |
-| `run plan scope_commit` | (sin argumentos) |
+| `run plan scope_answer` | — |
+| `run plan scope_commit` | — |
 
 ## Límites
 
@@ -79,10 +81,9 @@ entrevista, lo genera `documentation update_prd` desde el spec + backlog:
 - inventar argumentos que no le han dado → los convierte en preguntas
 - ejecutar una orden con preguntas sin responder
 - cerrar el scope sin las respuestas obligatorias (pregunta, métrica, datos, parada)
-- cerrar el scope con riesgos detectados sin decidir → obliga a aceptar/descartar cada uno
 - escribir docs/prd.md → es un documento derivado que genera `documentation update_prd`
 
-**Necesita que le den:** el encargo (brief) en lenguaje natural; las respuestas a las preguntas que genere; la decisión sobre cada riesgo detectado
+**Necesita que le den:** el encargo (brief) en lenguaje natural; las respuestas a las preguntas que genere
 
 **Se apoya en:** todos — es el punto de entrada que delega en el resto
 

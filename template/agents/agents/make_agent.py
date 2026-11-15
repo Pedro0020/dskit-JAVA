@@ -17,6 +17,11 @@ from agents.core.registry import register_agent
 
 _PIPELINE_CHAIN = ["pipeline", "predict", "train", "features", "data"]
 
+# Fachada Java (D6 del SPEC-JAVA): un target = un comando ./mvnw. Estos son
+# los targets que el Makefile Java del template garantiza; si falta uno, la
+# fachada está rota.
+_JAVA_TARGETS = ["setup", "test", "verify", "check", "lint", "format", "clean"]
+
 _TARGET_SUGGESTIONS: dict[str, list[dict]] = {
     "use_api": [
         {"target": "serve", "help": "Inicia el servidor FastAPI para servir el modelo", "depends_on": ["train"]},
@@ -86,25 +91,53 @@ class MakeAgent(BaseAgent):
         makefile_path = self.ctx.root / "Makefile"
         if not makefile_path.exists():
             return AgentResult(False, self.name, "validate", "No existe Makefile en la raíz del proyecto.")
+        if self.ctx.is_java:
+            targets = self._parse_makefile()
+            missing = [t for t in _JAVA_TARGETS if t not in targets]
+            if missing:
+                return AgentResult(
+                    False, self.name, "validate",
+                    f"Al Makefile Java le faltan targets de la fachada: {', '.join(missing)}.",
+                    warnings=[f"Falta '{t}'" for t in missing],
+                )
+            return AgentResult(True, self.name, "validate", "Makefile Java con la fachada completa sobre ./mvnw.")
         return AgentResult(True, self.name, "validate", "Makefile encontrado.")
 
     def check_pipeline_chain(self) -> AgentResult:
-        """Verifica que la cadena pipeline → predict → train → features → data sea correcta."""
+        """
+        Python: verifica la cadena pipeline → predict → train → features → data.
+        Java: verifica la fachada de targets ./mvnw (test/verify/check/lint/format).
+        """
         targets = self._parse_makefile()
+        chain = _JAVA_TARGETS if self.ctx.is_java else _PIPELINE_CHAIN
         warnings = []
-        for target in _PIPELINE_CHAIN:
+        for target in chain:
             if target not in targets:
                 warnings.append(f"Falta el target '{target}' en el Makefile.")
         missing = len([w for w in warnings if w.startswith("Falta")])
         return AgentResult(
             len(warnings) == 0, self.name, "check_pipeline_chain",
-            f"Pipeline: {len(_PIPELINE_CHAIN) - missing}/{len(_PIPELINE_CHAIN)} targets encontrados.",
-            data={"found": [t for t in _PIPELINE_CHAIN if t in targets], "missing": [t for t in _PIPELINE_CHAIN if t not in targets]},
+            f"Fachada: {len(chain) - missing}/{len(chain)} targets encontrados.",
+            data={"found": [t for t in chain if t in targets], "missing": [t for t in chain if t not in targets]},
             warnings=warnings,
         )
 
     def suggest_targets(self) -> AgentResult:
         """Sugiere nuevos targets según la configuración del proyecto."""
+        if self.ctx.is_java:
+            targets = self._parse_makefile()
+            suggestions = [
+                {"target": t, "help": "fachada sobre ./mvnw", "depends_on": []}
+                for t in _JAVA_TARGETS
+                if t not in targets
+            ]
+            return AgentResult(
+                True, self.name, "suggest_targets",
+                f"{len(suggestions)} target(s) de la fachada Java ausentes.",
+                data={"suggested": suggestions, "total_possible": len(suggestions)},
+                warnings=[] if suggestions else ["La fachada Java está completa."],
+            )
+
         suggestions = []
         for config_key, new_targets in _TARGET_SUGGESTIONS.items():
             if getattr(self.ctx.config, config_key, False):

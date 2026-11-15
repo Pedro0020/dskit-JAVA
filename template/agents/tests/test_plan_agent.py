@@ -243,3 +243,38 @@ def test_scope_riesgos_declarados_no_se_preguntan_de_nuevo(context):
                       riesgos="sql injection")
     pendientes = plan._pendientes_riesgo(plan._load_scope())
     assert "sql injection" not in pendientes, "ya declarado, no se vuelve a preguntar"
+
+
+# --- Rama Java: rumbo SCOPE -> RESEARCH -> DB -> FEAT -> API -------------------
+
+
+def test_scope_commit_java_siembra_direccion_java(context):
+    """En un proyecto Java, la direccion sembrada es la de dominios Java, sin EDA/MODEL."""
+    (context.root / "harness").mkdir(exist_ok=True)
+    (context.root / "harness" / "featureslist.json").write_text(
+        '{"version": 1, "project": "T", "features": []}', encoding="utf-8"
+    )
+    from agents.config import ProjectConfig
+    from agents.context import SharedContext
+
+    java_ctx = SharedContext(
+        root=context.root,
+        config=ProjectConfig(project_slug="mi_paquete", extra={"language": "java"}),
+    )
+    plan = PlanAgent(context=java_ctx)
+    plan.scope(reset=True)
+    answered = plan.scope_answer(
+        pregunta="¿Servicio de pedidos?",
+        metrica="p99 < 500ms",
+        datos="tabla pedidos",
+        parada="Si el batch no escala a 1M filas",
+    )
+    assert answered.success, answered.message
+
+    result = plan.scope_commit()
+    assert result.success, result.message
+    sembradas = result.data["sembradas"]
+    assert "DB-001" in sembradas
+    assert "API-001" in sembradas
+    assert "MODEL-001" not in sembradas
+    assert "EDA-001" not in sembradas

@@ -212,3 +212,62 @@ def test_generate_skeleton_creates_files_for_untested(context):
     assert len(result.data.get("created", [])) >= 1
     created = " ".join(result.data["created"])
     assert "test_servicio" in created
+
+
+# ─── Rama Java (language == 'java') ─────────────────────────────────────────
+
+
+@pytest.fixture
+def java_context(tmp_path: Path):
+    from agents.config import ProjectConfig
+    from agents.context import SharedContext
+
+    (tmp_path / ".copier-answers.yml").write_text(
+        "language: java\nbase_package: com.ejemplo.proyecto\njava_version: \"17\"\n"
+    )
+    pkg = tmp_path / "src" / "main" / "java" / "com" / "ejemplo" / "proyecto"
+    pkg.mkdir(parents=True)
+    (pkg / "Servicio.java").write_text("public class Servicio {}\n")
+    (pkg / "SinTest.java").write_text("public class SinTest {}\n")
+    tests = tmp_path / "src" / "test" / "java" / "com" / "ejemplo" / "proyecto"
+    tests.mkdir(parents=True)
+    (tests / "ServicioTest.java").write_text("class ServicioTest {}\n")
+    return SharedContext(root=tmp_path, config=ProjectConfig(extra={"language": "java", "base_package": "com.ejemplo.proyecto"}))
+
+
+def test_java_untested_detects_missing(java_context):
+    agent = TestAgent(context=java_context)
+    result = agent.list_untested_modules()
+    assert result.success
+    assert result.data == ["SinTest"]
+
+
+def test_java_skeleton_mirrors_package(java_context):
+    agent = TestAgent(context=java_context)
+    result = agent.generate_test_skeletons()
+    assert result.success
+    assert len(result.data.get("created", [])) >= 1
+    created = java_context.root / "src" / "test" / "java" / "com" / "ejemplo" / "proyecto" / "SinTestTest.java"
+    assert created.exists()
+    assert "package com.ejemplo.proyecto;" in created.read_text()
+
+
+def test_java_skeleton_dry_run_writes_nothing(java_context):
+    agent = TestAgent(context=java_context)
+    result = agent.generate_test_skeletons(dry_run=True)
+    assert result.success
+    assert not (java_context.root / "src" / "test" / "java" / "com" / "ejemplo" / "proyecto" / "SinTestTest.java").exists()
+
+
+def test_java_run_tests_without_wrapper_falls_back_to_mvn(tmp_path: Path):
+    # Sin wrapper ni mvn instalado en CI no se puede ejecutar el build real;
+    # lo que se prueba es la degradación honesta: MissingDependencyError o
+    # fallo del comando, nunca una excepción sin controlar.
+    from agents.config import ProjectConfig
+    from agents.context import SharedContext
+
+    (tmp_path / ".copier-answers.yml").write_text("language: java\n")
+    ctx = SharedContext(root=tmp_path, config=ProjectConfig(extra={"language": "java"}))
+    agent = TestAgent(context=ctx)
+    result = agent.run_tests()
+    assert isinstance(result.success, bool)  # nunca lanza hacia arriba

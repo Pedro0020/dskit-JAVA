@@ -129,6 +129,24 @@ class SharedContext:
     def pyproject_file(self) -> Path:
         return self.root / "pyproject.toml"
 
+    # -- proyecto Java (language == 'java') ------------------------------------
+    @property
+    def is_java(self) -> bool:
+        """True si el proyecto se generó con `language: java` (.copier-answers.yml)."""
+        return str(self.config.extra.get("language", "python")).lower() == "java"
+
+    @property
+    def pom_file(self) -> Path:
+        return self.root / "pom.xml"
+
+    @property
+    def java_src_dir(self) -> Path:
+        return self.root / "src" / "main" / "java"
+
+    @property
+    def java_test_dir(self) -> Path:
+        return self.root / "src" / "test" / "java"
+
     def runs_dir(self) -> Path | None:
         """Solo existe cuando ml_type == 'redes_neuronales' (logs de TensorBoard)."""
         if self.config.ml_type == "redes_neuronales":

@@ -109,3 +109,29 @@ def test_validate_cron_calcula_proximas_ejecuciones(context):
 def test_validate_cron_acepta_alias(context):
     result = CICDAgent(context=context).validate_cron(expression="@daily")
     assert result.success
+
+
+# ─── Rama Java (language == 'java') ─────────────────────────────────────────
+
+
+def _java_context(tmp_path):
+    from agents.config import ProjectConfig
+    from agents.context import SharedContext
+
+    (tmp_path / ".copier-answers.yml").write_text('language: java\njava_version: "21"\n')
+    return SharedContext(root=tmp_path, config=ProjectConfig(extra={"language": "java", "java_version": "21"}))
+
+
+def test_generate_workflow_java_usa_maven(tmp_path):
+    ctx = _java_context(tmp_path)
+    agent = CICDAgent(context=ctx)
+    result = agent.generate_workflow()
+
+    assert result.success
+    path = tmp_path / ".github" / "workflows" / "ci.yml"
+    text = path.read_text()
+    assert "./mvnw -B verify" in text
+    assert "actions/setup-java" in text
+    assert "java-version: 21" in text
+    assert "uv" not in text.replace("java-version", "")  # sin pasos Python
+

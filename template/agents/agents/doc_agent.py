@@ -62,6 +62,7 @@ class DocAgent(BaseAgent):
             "list_references": self.list_references,
             "index": self.index,
             "status": self.status,
+            "generate_javadoc": self.generate_javadoc,
         }
 
     def _buscar_grafo(self, query: str, avisos: list) -> list[dict]:
@@ -130,6 +131,33 @@ class DocAgent(BaseAgent):
             avisos.append("error al leer vault")
         return encontrados
 
+    def _buscar_codigo(self, query: str, avisos: list) -> list[dict]:
+        """
+        Grep literal sobre el código fuente (Java: src/main/java). Sustituye
+        a la fuente 'graph' en proyectos Java, donde graphify no aplica (la
+        estructura la gobierna el agente `architecture` con ArchUnit).
+        """
+        if not self.ctx.java_src_dir.exists():
+            return []
+        q = query.lower()
+        encontrados = []
+        try:
+            for java in self.ctx.java_src_dir.rglob("*.java"):
+                texto = java.read_text(encoding="utf-8", errors="replace")
+                if q not in texto.lower():
+                    continue
+                for numero, linea in enumerate(texto.split("\n"), 1):
+                    if q in linea.lower():
+                        encontrados.append({
+                            "source_type": "code",
+                            "file": str(java.relative_to(self.ctx.root)),
+                            "line": numero,
+                            "text": linea.strip()[:200],
+                        })
+        except Exception:  # noqa: BLE001
+            avisos.append("error al leer src/main/java")
+        return encontrados
+
     @staticmethod
     def _formatear(resultado: dict) -> str:
         tipo = resultado.get("source_type")
@@ -138,6 +166,8 @@ class DocAgent(BaseAgent):
         if tipo == "rag":
             return (f"  [rag] {resultado.get('source', '?')}:{resultado.get('line', '?')}"
                     f" — {resultado.get('text', '')[:100]}")
+        if tipo == "code":
+            return f"  [code] {resultado['file']}:{resultado['line']} — {resultado['text']}"
         return f"  [vault] {resultado['file']}:{resultado['line']} — {resultado['text']}"
 
     def search(self, *, query: str, sources: str = "all") -> AgentResult:
@@ -146,11 +176,19 @@ class DocAgent(BaseAgent):
             return AgentResult(False, self.name, "search", "Proporciona una consulta.")
 
         avisos: list[str] = []
-        buscadores = {
-            "graph": self._buscar_grafo,
-            "rag": self._buscar_rag,
-            "vault": self._buscar_vault,
-        }
+        if self.ctx.is_java:
+            # graphify no aplica en Java: la estructura la gobierna architecture.
+            buscadores = {
+                "code": self._buscar_codigo,
+                "rag": self._buscar_rag,
+                "vault": self._buscar_vault,
+            }
+        else:
+            buscadores = {
+                "graph": self._buscar_grafo,
+                "rag": self._buscar_rag,
+                "vault": self._buscar_vault,
+            }
         combinados: list[dict] = []
         for nombre, buscador in buscadores.items():
             if sources in ("all", nombre):
@@ -441,11 +479,23 @@ class DocAgent(BaseAgent):
 
     def status(self) -> AgentResult:
         """Estado de cada fuente de documentación."""
-        comprobaciones = (
-            ("graphify", self._estado_grafo),
-            ("RAG", self._estado_rag),
-            ("vault", self._estado_vault),
-        )
+        if self.ctx.is_java:
+            from agents.tools.maven_tool import MavenTool
+
+            comprobaciones = (
+                ("javadoc", lambda: ({"available": MavenTool.mvnw_path(self.ctx.root).exists()},
+                                     True, "target/site/apidocs/" if (self.ctx.root / "target" / "site" / "apidocs").exists() else "no generado")),
+                ("RAG", self._estado_rag),
+                ("vault", self._estado_vault),
+                ("code", lambda: ({"files": len(list(self.ctx.java_src_dir.rglob("*.java"))) if self.ctx.java_src_dir.exists() else 0},
+                                  True, f"{len(list(self.ctx.java_src_dir.rglob('*.java'))) if self.ctx.java_src_dir.exists() else 0} clases")),
+            )
+        else:
+            comprobaciones = (
+                ("graphify", self._estado_grafo),
+                ("RAG", self._estado_rag),
+                ("vault", self._estado_vault),
+            )
         fuentes, lineas = {}, []
         for etiqueta, comprobar in comprobaciones:
             datos, ok, detalle = comprobar()
@@ -456,4 +506,34 @@ class DocAgent(BaseAgent):
             True, self.name, "status",
             "Fuentes de documentación:\n" + "\n".join(lineas),
             data=fuentes,
+        )
+
+    def generate_javadoc(self) -> AgentResult:
+        """Java: genera el Javadoc del proyecto (`./mvnw javadoc:javadoc`) y verifica el índice."""
+        if not self.ctx.is_java:
+            return AgentResult(
+                False, self.name, "generate_javadoc",
+                "Este proyecto no es Java (language != 'java' en .copier-answers.yml).",
+            )
+        from agents.exceptions import MissingDependencyError, ToolExecutionError
+        from agents.tools.maven_tool import MavenTool
+
+        try:
+            result = MavenTool.run(self.ctx.root, ["javadoc:javadoc"], quiet=True)
+        except MissingDependencyError as exc:
+            return AgentResult(False, self.name, "generate_javadoc", str(exc))
+        except ToolExecutionError as exc:
+            return AgentResult(False, self.name, "generate_javadoc", str(exc))
+
+        index = self.ctx.root / "target" / "site" / "apidocs" / "index.html"
+        if result.ok and index.exists():
+            return AgentResult(
+                True, self.name, "generate_javadoc",
+                f"Javadoc generado en '{index.relative_to(self.ctx.root)}'.",
+                data={"path": str(index)},
+            )
+        return AgentResult(
+            False, self.name, "generate_javadoc",
+            f"javadoc:javadoc falló (rc={result.returncode}).",
+            data={"stderr": result.stderr[-1000:]},
         )

@@ -137,6 +137,7 @@ CONTRACTS: dict[str, Contract] = {
             "ejecutar la orden de trabajo aprobada (via GStack) y resumir qué debe verificar el humano",
             "dirigir la entrevista de arranque (plan scope): preguntar el spec, validar la métrica numérica y escribir references/00-objetivo.md",
             "sembrar el backlog con las features de dirección en su orden lógico, delegando en 'harness add' (un recurso, un dueño)",
+            "sembrar la variante Java del rumbo (SCOPE-001 → RESEARCH-001 → DB-001 → FEAT-001 → API-001) cuando language == 'java'",
             "leer docs/vault/00_META/IA_index.md para obtener contexto del proyecto y la topología de agentes",
             "consultar docs/vault/05_AGENTES/<Agent>.md para decidir a quién delegar cada paso",
         ),
@@ -274,8 +275,11 @@ CONTRACTS: dict[str, Contract] = {
         ),
     ),
     "test": Contract(
-        role="Ejecuta la suite de tests y explica los resultados.",
-        can=("correr pytest, resumir fallos y cobertura, detectar módulos sin test homónimo",),
+        role="Ejecuta la suite de tests y explica los resultados (pytest en Python, ./mvnw test en Java).",
+        can=(
+            "correr pytest (Python) o ./mvnw test con surefire (Java), resumir fallos y cobertura, detectar módulos/clases sin test homónimo",
+            "generar esqueletos de test (tests/test_<modulo>.py o src/test/java/<paquete>/<Clase>Test.java)",
+        ),
         cannot=(
             "arreglar los tests que fallan → refactor (código) o el humano",
             "escribir tests nuevos completos — solo detecta huecos",
@@ -421,9 +425,10 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=("git",),
     ),
     "cicd": Contract(
-        role="Dueño de los workflows de GitHub Actions del proyecto generado.",
+        role="Dueño de los workflows de GitHub Actions del proyecto generado (Python o Java).",
         can=(
             "generar y validar .github/workflows/*.yml cruzando los targets contra el Makefile real",
+            "en Java: generar el workflow Maven (setup-java + ./mvnw -B verify + artefacto JaCoCo)",
             "validar expresiones cron, describirlas en lenguaje natural y calcular sus próximas "
             "ejecuciones — absorbido de `schedule`, que solo repetía lo que validate_cron ya devolvía",
         ),
@@ -435,8 +440,11 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=("make", "git"),
     ),
     "make": Contract(
-        role="Dueño del Makefile: valida targets y la cadena del pipeline, sugiere targets nuevos.",
-        can=("verificar targets, chequear pipeline → predict → train → features → data",),
+        role="Dueño del Makefile: valida targets y la cadena del pipeline (Python) o la fachada ./mvnw (Java).",
+        can=(
+            "verificar targets, chequear pipeline → predict → train → features → data (Python)",
+            "verificar la fachada Java (setup/test/verify/check/lint/format/clean sobre ./mvnw)",
+        ),
         cannot=(
             "generar workflows de CI → cicd",
             "ejecutar el pipeline completo — sugiere, el humano ejecuta",
@@ -456,10 +464,13 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=("dependency",),
     ),
     "dependency": Contract(
-        role="Vigilante de dependencias: obsolescencia y vulnerabilidades contra PyPI/OSV. Solo lee.",
-        can=("detectar paquetes desactualizados y vulnerabilidades conocidas (necesita internet)",),
+        role="Vigilante de dependencias: obsolescencia y vulnerabilidades (PyPI/OSV en Python, Maven Central/OWASP en Java). Solo lee.",
+        can=(
+            "detectar paquetes desactualizados y vulnerabilidades conocidas (necesita internet)",
+            "en Java: versions:display-dependency-updates y OWASP dependency-check contra la NVD",
+        ),
         cannot=(
-            "actualizar o instalar nada → env (dueño de uv.lock)",
+            "actualizar o instalar nada → env (dueño de uv.lock / pom.xml de dependencias)",
         ),
         collaborates=("env",),
     ),
@@ -530,14 +541,15 @@ CONTRACTS: dict[str, Contract] = {
         collaborates=("audit",),
     ),
     "doc": Contract(
-        role="Documentación unificada: responde dónde está algo consultando grafo, índice semántico y vault, y navega el grafo.",
+        role="Documentación unificada: responde dónde está algo consultando grafo (Python) o código (Java), índice semántico y vault.",
         can=(
-            "buscar en las tres fuentes a la vez (graphify, RAG, vault) y fusionar resultados",
-            "consultar el grafo estructural de graphify",
+            "buscar en las fuentes a la vez (graphify o src/main/java, RAG, vault) y fusionar resultados",
+            "consultar el grafo estructural de graphify (Python) o grepear el código Java",
             "buscar en el vault Obsidian por texto",
             "informar de qué fuentes están disponibles y cuáles no",
             "navegar el grafo: vecinos de un nodo y listado de referencias "
             "(absorbido de `docsearch`, cuya búsqueda repetía la de aquí)",
+            "generar el Javadoc del proyecto Java (./mvnw javadoc:javadoc)",
         ),
         cannot=(
             "escribir documentación → eso es de 'documentation' (README, CHANGELOG) o 'knowledge' (vault)",
