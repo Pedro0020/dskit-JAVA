@@ -145,9 +145,18 @@ def test_translate_gradle_jacoco_y_javadoc():
 
 
 def test_translate_gradle_bootrun_con_args():
-    assert MavenTool._translate_gradle(
-        ["spring-boot:run", "-Dspring-batch.job.name=demoJob"]
-    ) == ["bootRun", "--args=--spring-batch.job.name=demoJob"]
+    goals = MavenTool.run_job_goals("demoJob")
+    assert MavenTool._translate_gradle(goals) == [
+        "bootRun",
+        "--args=--spring.batch.job.name=demoJob --spring.main.web-application-type=none",
+    ]
+
+
+def test_run_job_goals_son_headless():
+    goals = MavenTool.run_job_goals("demoJob")
+    assert goals[0] == "spring-boot:run"
+    assert "spring.main.web-application-type=none" in goals[1]
+    assert "spring.batch.job.name=demoJob" in goals[1]
 
 
 def test_translate_gradle_rechaza_pit_con_motivo():

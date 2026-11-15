@@ -168,14 +168,17 @@ make agents-eval     # harness + contracts
 Alcance y criterios: [SPEC-JAVA.md](SPEC-JAVA.md) · estado y prioridades:
 [ROADMAP.md](ROADMAP.md).
 
-El árbol Python original de la plantilla sigue disponible con
-`language: python`, pero este fork no lo mantiene como foco.
+**Esta versión es Java-only:** el árbol Python original del template se
+eliminó (decisión en ROADMAP) — `language: python` ya no está disponible y los
+agentes DS/ML (data, ml, mlflow, notebook) tampoco. El plano de control del
+arnés sigue siendo Python (necesita `uv`) porque es el foso de gobierno, no el
+proyecto.
 
-**Verificado (renders limpios):** estandar Maven → `./init.sh` verde
-(`./mvnw verify`); Gradle → `./gradlew build` verde; Postgres+security+
-observability → gate verde; `copier update` aplica cambios del template;
-evals del arnés **PASS** (harness 14/14, routing 45/45, contracts) y render
-Python sin regresión.
+**Verificado (renders limpios):** estandar Maven (JDK 17 y 21) → `./init.sh`
+verde; Gradle → `./gradlew build` verde; Postgres+security+observability →
+gate verde; `copier update` aplica cambios del template; evals del arnés
+**PASS**; proyecto integral (web+batch+security+observability+archunit) con
+todas las acciones de los agentes en verde.
 
 ## Créditos y origen
 

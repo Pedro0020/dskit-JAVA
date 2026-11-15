@@ -104,6 +104,12 @@ else
   warn "venv" "sin .venv — ejecuta 'make setup' antes de tocar código"
 fi
 {% else %}
+# En Git Bash/MSYS, JAVA_HOME llega a menudo en formato Windows (C:\...);
+# mvnw/gradlew hacen `cd "$JAVA_HOME"` y fallan. Se convierte a POSIX una vez.
+if command -v cygpath >/dev/null 2>&1 && [ -n "$JAVA_HOME" ]; then
+  JAVA_HOME="$(cygpath -u "$JAVA_HOME")"
+  export JAVA_HOME
+fi
 JAVA_RAW=""
 JAVA_MAJOR=""
 if command -v java >/dev/null 2>&1; then

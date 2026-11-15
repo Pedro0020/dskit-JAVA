@@ -480,4 +480,32 @@ dependencias, siguiendo la filosofía de `template/.opencode/agents/lider.md`
     la lista de variables + combos `java-graphify`/`java-gradle`.
   - E2E: render Postgres+security+observability → gate verde; `copier update`
     verificado (src git + proyecto git, v2 aplicada).
+- **Versión Java-only (15 Nov 2026)**: se eliminó el árbol Python del template
+  (`language` queda fijo a `java`; se borraron pyproject/main.py/tasks.py, el
+  paquete DS, data/models/notebooks/reports/tools/tests/api/chat/demo, docs
+  Python, y los agentes data/ml/mlflow/notebook/knowledge/refactor/graph +
+  sus tools/prompts/tests/workflows). Las variables Python de copier.yml se
+  conservan porque los prompts compartidos las referencian (ramas muertas).
+  El validador pasa a matriz Java-only (use_rag/use_sdd + 4 pinned). El CI
+  raíz pierde la matriz Python; `smoke-java` prueba JDK 17 y 21.
+- **Bugs cazados por el proyecto de prueba integral** (web+batch+security+
+  observability+archunit):
+  - `make batch-run`/`batch.run_job` colgaban en apps web: ahora pasan
+    `--spring.main.web-application-type=none` (el job termina y el proceso
+    sale). Maven: `-Dspring-boot.run.arguments=...`; Gradle: `bootRun --args=`.
+  - `security.check_jwt` daba FAIL en todo proyecto con starter-security sin
+    JWT: ahora solo es fallo si hay `oauth2-resource-server` sin issuer; sin
+    él es elección (success + aviso).
+  - `ops.check_batch_metrics` fallaba en el job demo con observability: el
+    `DemoJobConfig` ahora registra un `Timer` (`batch.demo.step`) cuando
+    `use_observability` (y el fichero debe pasar Spotless — portar el
+    formateado).
+  - `JAVA_HOME` en formato Windows (`C:\...`) rompía mvnw bajo Git Bash:
+    `init.sh` lo convierte con `cygpath -u`. JDK 21 local:
+    `C:\Program Files\Java\jdk-21.0.12.1`.
+  - `test_site_extractors` importa `knowledge_tool`: se conservó (lo usa el
+    extractor de arXiv del RAG); borrarlo rompía la colección de tests.
+  - `mutation`/PIT y `crap` verificados sobre el render integral; el job demo
+    tiene pocos mutantes y sin cobertura, así que el score bajo es esperado.
+  - E2E JDK 21: render con `java_version: 21` → gate completo verde.
 

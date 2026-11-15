@@ -1,8 +1,8 @@
 # SPEC-JAVA — Arnés dskit para Java (Spring Boot / Spring Batch)
 
-Estado: implementada (v1) — JAVA-001..013 hechos; ver ROADMAP.md para lo
-pendiente (JAVA-001b/004/014/015).
-Backlog: JAVA-001..JAVA-015 (ver ROADMAP.md)
+Estado: implementada (v2, Java-only) — JAVA-001..013 (incl. 001b fase 1) y
+JAVA-016 hechos; ver ROADMAP.md para lo pendiente (Gradle fase 2).
+Backlog: JAVA-001..JAVA-016 (ver ROADMAP.md)
 
 ---
 
@@ -122,8 +122,10 @@ que lo demuestra*.
   dependency (OWASP + versions-maven + convergencia/enforcer), cicd, make,
   refactor, doc/documentation (Javadoc), graph (ArchUnit/JDeps), env, plan.
   > Estado: hechos test/dependency/cicd/make/doc/plan (JAVA-005b). `refactor`
-  > y `graph` quedan pendientes de decisión (JAVA-005c: reescribir o excluir
-  > en renders Java).
+  > y `graph` quedan **excluidos en renders Java** (JAVA-005c): son
+  > Python-only (type hints / figuras ML) y en Java no tienen función — sus
+  > contratos permanecen en CONTRACTS sin registro (patrón tolerado). Esta
+  > versión es Java-only: el árbol Python se eliminó del template.
 - Podados (4): data, ml, mlflow, notebook — sus contratos permanecen en
   CONTRACTS sin registro (patrón ya tolerado por `validate_contracts`).
 - `mutation` deja de usar el AST casero y pasa a envolver PIT (ver JAVA-012).
@@ -231,8 +233,8 @@ que lo demuestra*.
 
 > Estado: workflow base y `smoke-java` (JAVA-013), y CI ampliado (JAVA-013b:
 > matriz 17+21, job de evals/tests del arnés, SBOM+Trivy por push, job PIT).
-> Release/publish queda **pospuesto** (P4): exige cuentas/claves por usuario y
-> un workflow que fallaría para la mayoría — no se convierte en confianza falsa.
+> Release/publish: **descartado por decisión** (no se publica nada) — el
+> template no trae workflow de release ni credenciales.
 
 ### 3.14 Rúbrica — JAVA-014
 

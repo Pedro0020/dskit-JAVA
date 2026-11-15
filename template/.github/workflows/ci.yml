@@ -55,7 +55,7 @@ jobs:
         run: uv run --no-project python -m agents.prompts_sync
 
       - name: Tests de los agentes
-        run: uv run --no-project --with pytest --with hypothesis --with numpy --with matplotlib python -m pytest agents/tests -q
+        run: uv run --no-project --with pytest --with hypothesis python -m pytest agents/tests -q
 
   security:
     name: SBOM + Trivy

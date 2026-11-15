@@ -38,6 +38,7 @@ el modelo pueda ignorar.
 {% endif %}{% if use_docker %}| `docker` | Lint Dockerfile, valida docker-compose |{% endif %}
 {% if language != 'java' %}
 | `ml` | Inspecciona modelos, importancia, overfitting |
+| `refactor` | Refactoriza código automáticamente: type hints, mutable defaults, bare excepts |
 {% endif %}
 | `review` | Funciones largas, except desnudos, duplicación |
 | `documentation` | Sincroniza README/Makefile, CHANGELOG, bump versión |

@@ -6,18 +6,13 @@ from agents.orchestrator import Orchestrator
 
 
 def test_all_core_agents_are_discovered():
-    # El núcleo de gobierno SIEMPRE está, se genere el proyecto con el perfil
-    # que se genere. Los agentes ligados a extras (docker, api, mlflow, rag,
-    # knowledge, mutation) y los periféricos (supervisor, audit, research,
-    # installer) dependen del perfil — no son parte de este invariante.
-    # En Java, los agentes DS/ML (data/ml) no existen y sí los dominios Java.
+    # El núcleo de gobierno SIEMPRE está. Este template es Java-only (el árbol
+    # Python se eliminó), así que data/ml/graph ya no existen en ningún render.
     agents = agent_registry.all()
     expected = {"git", "review", "documentation", "harness", "test", "plan",
                 "doctor", "env", "make"}
     if get_context().is_java:
         expected |= {"batch", "migrations", "security", "api", "architecture", "ops"}
-    else:
-        expected |= {"data", "graph", "ml"}
     assert expected.issubset(agents.keys())
 
 
@@ -76,19 +71,12 @@ def test_dispatch_auto_runs_zero_arg_action(context):
 
 def test_dispatch_reports_required_args_instead_of_guessing_them(context):
     # Una acción con argumento obligatorio no debe ejecutarse sola: dispatch
-    # reporta qué falta en vez de inventarlo. Python: data.eda_report
-    # (filename). Java: migrations.create (name).
+    # reporta qué falta en vez de inventarlo (migrations.create necesita name).
     orchestrator = Orchestrator(context=context)
-    if get_context().is_java:
-        result = orchestrator.dispatch("crea una migracion nueva")
-        assert result.success  # no es un error, es información de qué falta
-        assert result.data.get("selected_action") == "create"
-        assert "name" in result.data.get("required_args", [])
-    else:
-        result = orchestrator.dispatch("haz un eda_report del dataset")
-        assert result.success  # no es un error, es información de qué falta
-        assert result.data.get("selected_action") == "eda_report"
-        assert "filename" in result.data.get("required_args", [])
+    result = orchestrator.dispatch("crea una migracion nueva")
+    assert result.success  # no es un error, es información de qué falta
+    assert result.data.get("selected_action") == "create"
+    assert "name" in result.data.get("required_args", [])
 
 
 def test_dispatch_disambiguates_commit_actions_via_aliases(context):

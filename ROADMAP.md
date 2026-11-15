@@ -19,7 +19,7 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Hecha (004a–d) | — |
 | JAVA-005a | Fixes language-aware (commit/doctor/env/untracked) | Hecha | — |
 | JAVA-005b | Reescritura y poda de agentes (test/dependency/cicd/make/doc/plan) | Hecha | — |
-| JAVA-005c | Reescritura JVM de refactor y graph (hueco del SPEC §3.5) | Pospuesta (decisión pendiente) | P3 |
+| JAVA-005c | Reescritura JVM de refactor y graph (hueco del SPEC §3.5) | Hecha (excluidos en Java) | — |
 | JAVA-006 | Agente `batch` | Hecha | — |
 | JAVA-007 | Agente `migrations` | Hecha | — |
 | JAVA-008 | Agente `security` | Hecha | — |
@@ -34,16 +34,16 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Hecha (014a–c) | — |
 | JAVA-015 | DX: reviewer como PR check, IntelliJ, fricción | Hecha | — |
 | JAVA-016 | Memoria estructural Java: vault + grafo determinista + graphify opcional | Hecha | — |
-| — | Release/publish del artefacto (GitHub Packages / Maven Central) | Pospuesto | P4 |
-| — | Eliminar el árbol Python (si se aprueba) | Pendiente | P4 |
-| — | Segunda ronda E2E (Postgres real, JDK 21, `copier update`) | Pendiente | P4 |
+| — | Release/publish del artefacto (GitHub Packages / Maven Central) | Descartado (decisión) | — |
+| — | Eliminar el árbol Python | Hecha | — |
+| — | Segunda ronda E2E (Postgres real, JDK 21, `copier update`) | Hecha | — |
 
 Hitos: **H0** completado (backlog Java, fixes language-aware, v2.0.0);
 **H1** completado (fase A + CI + fase B de calidad + poda/reescritura de
 agentes + dominios Java); **H2** completado (prompts Java, CI ampliado,
-rúbrica, DX, memoria estructural, Gradle fase 1). Pendiente del backlog:
-release/publish (pospuesto), 005c (decisión), Gradle fase 2 (extras JVM),
-segunda ronda E2E ampliada (JDK 21) y eliminar el árbol Python (si se aprueba).
+rúbrica, DX, memoria estructural, Gradle fase 1, E2E JDK 21/Postgres/update y
+template Java-only). Pendiente: Gradle fase 2 (otra versión) y JAVA-015 no
+bloqueante (IntelliJ queda documentado en el README del proyecto generado).
 
 Decisiones previas: plano de control Python + template Java (sin port a JVM),
 núcleo de gobierno intacto, RAG no se toca. Los dominios críticos
@@ -53,12 +53,12 @@ confianza real o falsa.
 
 ### Plan detallado de lo pendiente (Java)
 
-> **Estado (15 Nov 2026): implementado.** 004a–d, 005c (pospuesta), 012c,
-> 013b, 014a–c, 015 y 016 están hechos y verificados con renders limpios.
-> Quedan solo: release/publish (pospuesto a propósito), la fase 2 de Gradle
-> (typecheck/PIT/PMD/SBOM en Gradle son Maven-first) y la segunda ronda E2E
-> ampliada (JDK 21 + Postgres real: el render Postgres y `copier update` ya
-> están verificados).
+> **Estado (15 Nov 2026): implementado.** 004a–d, 005c (refactor/graph
+> excluidos en Java), 012c, 013b, 014a–c, 015 y 016 están hechos y verificados
+> con renders limpios. Gradle queda en fase 1 (la fase 2 se hará en otra
+> versión); release/publish descartado por decisión; el árbol Python se
+> eliminó (template Java-only); el E2E con JDK 21 y `copier update` están
+> verificados.
 
 Desglose accionable de la auditoría del 15 Nov 2026 sobre un render Java
 limpio: el build, la cobertura, el CI y los evals están en verde; lo que faltaba

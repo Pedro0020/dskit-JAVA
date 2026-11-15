@@ -183,12 +183,12 @@ class BatchAgent(BaseAgent):
         from agents.tools.maven_tool import MavenTool
 
         if dry_run:
-            return AgentResult(True, self.name, "run_job", f"[dry-run] ./mvnw spring-boot:run -Dspring-batch.job.name={job}")
+            return AgentResult(True, self.name, "run_job", f"[dry-run] ejecutar {job} (headless)")
 
         try:
             result = MavenTool.run(
                 self.ctx.root,
-                ["spring-boot:run", f"-Dspring-batch.job.name={job}"],
+                MavenTool.run_job_goals(job),
                 timeout=1800,
             )
         except MissingDependencyError as exc:

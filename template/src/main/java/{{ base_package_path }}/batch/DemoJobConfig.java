@@ -1,5 +1,7 @@
 package {{ base_package }}.batch;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -24,11 +26,18 @@ public class DemoJobConfig {
     }
 
     @Bean
-    public Step demoStep(JobRepository jobRepository, PlatformTransactionManager transactionManager) {
+    public Step demoStep(
+            JobRepository jobRepository, PlatformTransactionManager transactionManager, MeterRegistry meterRegistry) {
+
+        // Métrica por step (JAVA-011): duración real, no solo un log.
+        Timer timer = Timer.builder("batch.demo.step").register(meterRegistry);
+
         return new StepBuilder("demoStep", jobRepository)
                 .tasklet(
                         (contribution, chunkContext) -> {
-                            System.out.println("demoJob: arnes listo — sustituye este tasklet por el job real");
+                            timer.record(() -> System.out.println(
+                                    "demoJob: arnes listo — sustituye este tasklet por el job real"));
+
                             return RepeatStatus.FINISHED;
                         },
                         transactionManager)
