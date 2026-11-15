@@ -1,11 +1,10 @@
 package {{ base_package }};
 
+import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
+
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.library.Architectures.layeredArchitecture;
 
 /**
  * Límites de capas del proyecto (JAVA-010): Controller -> Service -> Repository.
@@ -23,12 +22,18 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule capas = layeredArchitecture()
             .consideringAllDependencies()
-            .layer("Controller").definedBy("..controller..")
-            .layer("Service").definedBy("..service..")
-            .layer("Repository").definedBy("..repository..")
-            .whereLayer("Controller").mayNotBeAccessedByAnyLayer()
-            .whereLayer("Service").mayOnlyBeAccessedByLayers("Controller")
-            .whereLayer("Repository").mayOnlyBeAccessedByLayers("Service")
+            .layer("Controller")
+            .definedBy("..controller..")
+            .layer("Service")
+            .definedBy("..service..")
+            .layer("Repository")
+            .definedBy("..repository..")
+            .whereLayer("Controller")
+            .mayNotBeAccessedByAnyLayer()
+            .whereLayer("Service")
+            .mayOnlyBeAccessedByLayers("Controller")
+            .whereLayer("Repository")
+            .mayOnlyBeAccessedByLayers("Service")
             .allowEmptyShould(true);
 
     @ArchTest

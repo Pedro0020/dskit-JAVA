@@ -436,4 +436,11 @@ dependencias, siguiendo la filosofía de `template/.opencode/agents/lider.md`
     regresión (routing 36/36, data/ml presentes, dominios Java ausentes).
   - Prompt de `api_agent.md` en Java: el smoke por HTTP (`/actuator/health`)
     es del E2E; el smoke determinista del agente es `ApplicationTests`.
+  - **Lección Spotless**: el `ArchitectureTest.java` del template debe estar
+    exactamente en el formato de `palantirJavaFormat` (comillas, indentación
+    de cadenas). Si no, `./mvnw verify` falla en el gate de CUALQUIER render
+    Java con `use_archunit`. Para regenerarlo: render → `./mvnw spotless:apply`
+    → copiar el fichero formateado al template sustituyendo el paquete por
+    `{{ base_package }}`. Verificar siempre con `bash ./init.sh` completo
+    (no solo `--quick`).
 
