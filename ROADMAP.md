@@ -16,9 +16,10 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-001b | Build tool Gradle | Pendiente | P4 |
 | JAVA-002 | Puerta `./mvnw verify` + `contextLoads` | Hecha | — |
 | JAVA-003 | Backlog semilla Java | Hecha | — |
-| JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Pendiente | P3 |
+| JAVA-004 | Prompts Java (lider/explorer/implementer/reviewer) | Pendiente (004a–d) | P3 |
 | JAVA-005a | Fixes language-aware (commit/doctor/env/untracked) | Hecha | — |
 | JAVA-005b | Reescritura y poda de agentes (test/dependency/cicd/make/doc/plan) | Hecha | — |
+| JAVA-005c | Reescritura JVM de refactor y graph (hueco del SPEC §3.5) | Pendiente | P3 |
 | JAVA-006 | Agente `batch` | Hecha | — |
 | JAVA-007 | Agente `migrations` | Hecha | — |
 | JAVA-008 | Agente `security` | Hecha | — |
@@ -28,7 +29,7 @@ Spec con decisiones y criterios: `SPEC-JAVA.md`. Estado y prioridad:
 | JAVA-012 | Pipeline de calidad JVM: JaCoCo + Spotless (fase A) | Hecha | — |
 | JAVA-012b | PIT + Error Prone + Trivy/SBOM (fase B) | Hecha | — |
 | JAVA-013 | CI Java del template + `smoke-java` | Hecha | — |
-| JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Pendiente | P3 |
+| JAVA-014 | Rúbrica Java (checks en `init.sh` + R-criterios) | Pendiente (014a–b) | P3 |
 | JAVA-015 | DX: reviewer como PR check, IntelliJ, fricción | Pendiente | P3 |
 | — | Eliminar el árbol Python (si se aprueba) | Pendiente | P4 |
 | — | Segunda ronda E2E (Postgres real, JDK 21, `copier update`) | Pendiente | P4 |
@@ -43,6 +44,58 @@ núcleo de gobierno intacto, RAG no se toca. Los dominios críticos
 (transacciones, semántica batch, migraciones, observabilidad, concurrencia) se
 diseñan *con* el template, no después — son los que deciden si el arnés da
 confianza real o falsa.
+
+### Plan detallado de lo pendiente (Java)
+
+Desglose accionable de la auditoría del 15 Nov 2026 sobre un render Java
+limpio: el build, la cobertura, el CI y los evals están en verde; lo que falla
+es la **coherencia de los prompts** (siguen siendo de Python/ML) y la capa de
+gobierno específica de Java.
+
+#### JAVA-004a — Prompts de los agentes que razonan
+- `.opencode/agents/{lider,explorer,implementer,reviewer}.md` con
+  condicionales `{% if language == 'java' %}`: rutas `src/main/java/` y
+  `./mvnw verify` en lugar de `data/`/`pytest`; `implementer` con DI por
+  constructor, `@Transactional`, records; `reviewer` con R-criterios Java
+  (N+1, transacciones en writers, idempotencia/restartability, Bean
+  Validation, `@ControllerAdvice`).
+- `explorer.md` no puede ejemplificar delegaciones en `data` (podado en
+  Java): ejemplos con `architecture`, `migrations`, `batch` y rutas `.java`.
+- Los espejos `.claude/agents/*` se regeneran con `make assistants-sync`.
+
+#### JAVA-004b — Documentación del plano de control
+- `.opencode/agents/doc_agent.md`: en Java no hay Graphify — la fuente
+  estructural es `code` (grep `src/main/java`).
+- `agents/README.md`: dejar de describir `DataAgent`/`pyproject.toml` como
+  parte del proyecto Java; tabla de agentes por lenguaje.
+
+#### JAVA-004c — Workflows por dominio en el render Java
+- `_exclude`: `data_workflow.md`, `ml_workflow.md` y `rag_workflow.md` no se
+  copian cuando `language == 'java'` (los dominios no existen).
+- `dev_workflow.md` y `harness_workflow.md`: ejemplos Java (`./mvnw verify`,
+  `src/main/java/...`, `run batch ...`) detrás de condicionales.
+
+#### JAVA-004d — Restos cosméticos
+- `harness/featureslist.json` `$comment`: quitar "entrenando un modelo".
+- `agents_reference.md`: las filas Python (data/ml/notebook) no se muestran
+  en un render Java.
+
+#### JAVA-005c — Reescritura JVM de refactor y graph (hueco del SPEC §3.5)
+El SPEC lista `refactor` y `graph` entre los 10 agentes a reescribir; el
+ROADMAP solo trackeó 6. Decidir: (a) reescribirlos para Java (refactor:
+extracción de métodos/records/campos; graph: JDeps/ArchUnit) o (b)
+excluirlos en renders Java y documentar la decisión. Hasta decidir, no
+cuentan como hechos.
+
+#### JAVA-014a — R-criterios Java en `agents/rubric.py`
+- `CRITERIOS_REVISION` con la capa Java: transacciones (límites,
+  auto-invocación), idempotencia/restartability batch, N+1, versionado de
+  API, records/immutabilidad. GATE-1 ya ejecuta `mvnw verify` (cubre tests,
+  cobertura y formato).
+
+#### JAVA-014b — Casos canónicos con test
+- Test que demuestre que `harness finish` rechaza un writer sin transacción
+  y un job no reiniciable (métrica de éxito del SPEC §7).
 
 ### OMP-007 — GStack: lock de pipeline
 
