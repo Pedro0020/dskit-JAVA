@@ -31,6 +31,234 @@ dskit añade una puerta técnica (`init.sh`), un backlog con criterios de
 aceptación, agentes especializados y una definición de `done` que exige
 evidencia real.
 
+## Cómo está construido: capas y responsabilidades
+
+La idea central es separar **el producto Java** de **las herramientas que
+gobiernan su desarrollo**. Esta separación permite usar dskit tanto para crear
+una aplicación nueva como para incorporarlo a una aplicación que ya existe.
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Asistente de IA                                             │
+│ .opencode/agents/ · .claude/agents/                         │
+│ Decide qué investigar, implementar o revisar                 │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ delega acciones
+┌──────────────────────────────▼──────────────────────────────┐
+│ Plano de control                                             │
+│ agents/                                                      │
+│ Ejecuta comandos deterministas, aplica permisos y contratos  │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ lee y actualiza
+┌──────────────────────────────▼──────────────────────────────┐
+│ Gobierno del trabajo                                         │
+│ harness/ · init.sh                                           │
+│ Backlog, estado, evidencia y puerta de calidad               │
+└──────────────────────────────┬──────────────────────────────┘
+                               │ verifica
+┌──────────────────────────────▼──────────────────────────────┐
+│ Producto                                                     │
+│ src/ · pom.xml/build.gradle · src/test/                      │
+│ Código Java, configuración, tests y dependencias             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 1. Código de aplicación: `src/`
+
+Es el producto que el equipo quiere construir y operar. dskit no decide su
+modelo de dominio ni lo sustituye:
+
+| Ruta | Función | Por qué existe |
+|---|---|---|
+| `src/main/java/` | Código Java de producción | Contiene casos de uso, controllers, servicios, repositorios, jobs y configuración |
+| `src/main/resources/` | `application.yml`, perfiles y migraciones | Separa configuración y esquema de base de datos del código |
+| `src/test/java/` | Tests unitarios, de integración y de contexto | Demuestra que el comportamiento funciona, no solo que compila |
+| `src/test/resources/` | Configuración aislada de tests | Evita que una prueba use accidentalmente recursos de producción |
+
+En un proyecto web, el flujo habitual es `controller → service →
+repository`. En un proyecto Batch, el flujo es `job → step → reader /
+processor / writer`. En un proyecto web + Batch conviven ambos, pero deben
+compartir el dominio sin mezclar responsabilidades.
+
+### 2. Build y dependencias: `pom.xml` o `build.gradle`
+
+El build es la fuente de verdad del proyecto Java:
+
+- declara Spring Boot, Spring Batch y las librerías del dominio;
+- compila el código;
+- ejecuta los tests;
+- aplica formato, cobertura y análisis estático;
+- genera artefactos reproducibles.
+
+Los wrappers (`mvnw` o `gradlew`) fijan la versión de la herramienta. Por eso
+se usan en CI y en `init.sh`: el resultado no depende de lo que tenga instalado
+globalmente cada desarrollador.
+
+`Makefile` no reemplaza al build. Es una fachada con nombres fáciles de
+recordar (`make test`, `make verify`, `make security`) que delega el trabajo en
+Maven, Gradle o en un agente concreto.
+
+### 3. Puerta de entrada: `init.sh`
+
+`init.sh` es el punto de control antes de que un agente empiece a modificar el
+proyecto. Comprueba, en este orden:
+
+1. que Python y `uv` están disponibles para el plano de control;
+2. que existe el JDK requerido;
+3. que existe el wrapper de Maven o Gradle;
+4. que están los ficheros mínimos del arnés;
+5. que el backlog es válido;
+6. que existe código y al menos un test Java;
+7. que el build completo termina correctamente.
+
+```bash
+./init.sh          # comprobación completa
+./init.sh --quick  # estructura, sin ejecutar el build
+./init.sh --json   # resultado para herramientas y agentes
+```
+
+`--quick` sirve para diagnosticar estructura, pero no es suficiente para cerrar
+una feature. La regla importante es: **si la puerta falla, el agente no debe
+seguir implementando sobre un proyecto roto**.
+
+### 4. Gobierno del trabajo: `harness/`
+
+`harness/` contiene el estado de trabajo, no el código de negocio:
+
+| Fichero | Contenido | Uso |
+|---|---|---|
+| `featureslist.json` | Backlog, dependencias, criterios y estados | Define qué se puede hacer después |
+| `progress/current.md` | Feature activa | Permite retomar trabajo interrumpido |
+| `progress/history.md` | Historial append-only | Conserva decisiones y evidencia de cierres |
+| `progress/<agente>-<id>.md` | Informes de agentes | Evita depender de la memoria de una conversación |
+| `memory.md` | Memoria operativa del proyecto | Guarda contexto estable para el arnés |
+
+El backlog es útil porque convierte “mejora la aplicación” en una tarea
+verificable: “el endpoint devuelve 400 para un payload inválido” o “relanzar el
+job no duplica filas”.
+
+El ciclo se ejecuta con el agente `harness`:
+
+```bash
+uv run --no-project python -m agents --json run harness next
+uv run --no-project python -m agents --json run harness start --id VERIFY-001
+uv run --no-project python -m agents --json run harness status
+```
+
+Solo `harness` debe escribir el backlog y el progreso. Así se evita que un
+agente cambie el estado manualmente para aparentar que una tarea está
+terminada.
+
+### 5. Plano de control ejecutable: `agents/`
+
+`agents/` contiene Python, pero no es la aplicación Java. Es la capa que
+ejecuta operaciones repetibles sobre ella:
+
+```text
+agents/
+├── agents/       implementaciones de agentes
+├── tools/        operaciones pequeñas y deterministas
+├── core/         ciclo común y registro
+├── evals/        pruebas del propio arnés
+├── prompts/      skills y workflows
+├── contracts.py  dueño, rutas permitidas y acciones
+├── permissions.py política de confirmaciones
+├── context.py    rutas y configuración del proyecto
+└── cli.py        interfaz de comandos
+```
+
+Cada agente tiene una responsabilidad concreta. Por ejemplo:
+
+- `test` ejecuta y analiza tests;
+- `dependency` revisa dependencias;
+- `migrations` inspecciona Flyway/Liquibase;
+- `batch` revisa jobs y restartability;
+- `security` revisa exposición y configuración de seguridad;
+- `architecture` aplica reglas de capas y construye el vault;
+- `ops` revisa health, métricas y trazas.
+
+La forma general de uso es:
+
+```bash
+uv run --no-project python -m agents list
+uv run --no-project python -m agents describe migrations
+uv run --no-project python -m agents --json run migrations validate
+```
+
+El resultado estructurado (`--json`) permite que otro agente lo consuma sin
+tener que interpretar texto libre.
+
+### 6. Agentes de razonamiento: `.opencode/` y `.claude/`
+
+Estos directorios contienen instrucciones en Markdown para asistentes:
+
+- `lider`: coordina el ciclo y decide qué agente debe actuar;
+- `explorer`: investiga sin modificar código;
+- `implementer`: implementa una feature y sus tests;
+- `reviewer`: revisa diff, criterios y evidencia.
+
+No son los ejecutores de seguridad. Un prompt puede proponer una acción, pero
+la acción real pasa por `agents/`, contratos y permisos. Esta separación es
+importante porque un modelo puede equivocarse o interpretar mal una
+instrucción; el código determinista sigue siendo la última autoridad.
+
+`make assistants-sync` mantiene los espejos para otros asistentes, y
+`make skills` copia los workflows disponibles a `.opencode/skills/`.
+
+### 7. Calidad por dominio
+
+Los agentes Java existen porque un test genérico no detecta todos los fallos
+importantes:
+
+| Capa | Qué protege | Ejemplo de fallo que busca |
+|---|---|---|
+| API | Contrato HTTP | Cambiar una respuesta o aceptar datos inválidos sin detectarlo |
+| Batch | Semántica operacional | Job no reiniciable, writer no idempotente o chunk sin transacción |
+| Migrations | Evolución de datos | Editar una migración ya aplicada o romper checksums |
+| Security | Frontera de confianza | Actuator público, JWT mal configurado o CORS excesivo |
+| Architecture | Dependencias internas | Controller accediendo directamente al repository |
+| Ops | Operación en producción | Servicio sin health real, métricas o `traceId` |
+
+La finalidad no es añadir burocracia: es revisar los fallos que suelen aparecer
+después de desplegar, cuando corregirlos es más caro.
+
+### 8. Memoria y conocimiento
+
+Hay tres memorias con funciones distintas:
+
+- `harness/progress/`: qué trabajo está ocurriendo ahora;
+- `agents/workspace/`: artefactos temporales de los agentes;
+- `docs/vault/`: conocimiento estable de la arquitectura y los dominios.
+
+`make knowledge` regenera el vault estructural a partir del código. Si se
+activa RAG, `make index-rag` permite buscar sobre código, documentación, vault
+e histórico. El RAG ayuda a encontrar información; no concede permisos ni
+convierte contenido externo en instrucciones.
+
+### 9. Seguridad y permisos
+
+Los agentes clasifican acciones por riesgo:
+
+- acciones reversibles: se ejecutan directamente;
+- acciones destructivas: requieren confirmación;
+- acciones críticas: requieren confirmar el objetivo exacto.
+
+`policy_guard.py` añade una protección frente a comandos peligrosos del
+asistente, como borrar fuera del proyecto, leer credenciales o hacer
+`git push`. No es un sandbox: el aislamiento real debe proporcionarlo el
+entorno de ejecución.
+
+### 10. CI
+
+`.github/workflows/ci.yml` valida dos cosas diferentes:
+
+1. el template genera archivos sintácticamente válidos en sus combinaciones;
+2. proyectos Java reales pasan build, tests, puerta y evals del arnés.
+
+También se prueban ejemplos de adopción web y Batch. Esto evita que una
+modificación del template funcione para un proyecto nuevo y rompa el caso de
+uso más importante: incorporarlo a un proyecto existente.
+
 ## Dos formas de usarlo
 
 ### 1. Crear un proyecto nuevo
