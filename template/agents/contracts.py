@@ -289,8 +289,8 @@ CONTRACTS: dict[str, Contract] = {
     "mutation": Contract(
         role="Mutation testing y CRAP: comprueba que los tests «muerden» y mide el riesgo de cambio.",
         can=(
-            "ejecutar tools/mutate.py sobre un módulo y resumir killed/survived/score",
-            "calcular la métrica CRAP por función (complejidad ciclomática × cobertura)",
+            "ejecutar tools/mutate.py sobre un módulo (Python) o PIT sobre una clase (Java) y resumir killed/survived/score",
+            "calcular la métrica CRAP por función (Python, radon) o por clase (Java, complejidad estimada + JaCoCo)",
         ),
         cannot=(
             "arreglar los tests que fallan ni añadir tests él mismo → implementer/reviewer",

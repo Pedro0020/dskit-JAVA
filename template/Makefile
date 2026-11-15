@@ -591,7 +591,7 @@ info:
 	@echo ""
 {% else %}
 # Makefile Java — fachada fina sobre ./mvnw (D6 del spec JAVA: cero logica propia)
-.PHONY: help setup init test verify check compile lint format security mutation clean \
+.PHONY: help setup init test verify check compile lint format security typecheck mutation audit crap clean \
         agents-list agents-doctor agents-eval backlog prompts-sync prompts-check \
         skills assistants-sync
 
@@ -609,6 +609,15 @@ help:
 	@echo "    make verify         ./mvnw verify"
 	@echo "    make check          verify + puerta del arnes"
 	@echo "    make clean          ./mvnw clean"
+	@echo ""
+	@echo "  Calidad"
+	@echo "    make lint           Spotless check"
+	@echo "    make format         Spotless apply"
+	@echo "    make typecheck      Error Prone + NullAway (-Ptypecheck)"
+	@echo "    make mutation       PIT sobre una clase (make mutation TARGET=com.ejemplo.Servicio)"
+	@echo "    make security       Trivy fs + SBOM cyclonedx"
+	@echo "    make audit          PMD CPD (duplicacion)"
+	@echo "    make crap           CRAP de una clase (make crap TARGET=src/.../Servicio.java)"
 	@echo ""
 	@echo "  Arnes"
 	@echo "    make init           ./init.sh — la puerta"
@@ -646,11 +655,27 @@ lint:
 format:
 	@$(MVNW) -q spotless:apply
 
-security:
-	@echo "  (pendiente: Trivy/SBOM — A1.1b)"
+typecheck:
+	@$(MVNW) -q compile -Ptypecheck
 
 mutation:
-	@echo "  (pendiente: PIT — A1.1b)"
+	@test -n "$(TARGET)" || (echo "  usa: make mutation TARGET=com.ejemplo.Servicio" && exit 1)
+	@$(MVNW) org.pitest:pitest-maven:1.17.0:mutationCoverage \
+		-DtargetClasses=$(TARGET) -DoutputFormats=XML,HTML
+
+security:
+	@command -v trivy >/dev/null 2>&1 && \
+		trivy fs --severity HIGH,CRITICAL --exit-code 0 . || \
+		echo "  (trivy no instalado — https://github.com/aquasecurity/trivy)"
+	@$(MVNW) -q org.cyclonedx:cyclonedx-maven-plugin:2.9.1:makeAggregateBom || true
+	@echo "  SBOM en target/ (bom.json)"
+
+audit:
+	@$(MVNW) -q org.apache.maven.plugins:maven-pmd-plugin:3.25.0:cpd-check || true
+
+crap:
+	@test -n "$(TARGET)" || (echo "  usa: make crap TARGET=src/main/java/<paquete>/<Clase>.java" && exit 1)
+	@$(AGENTS) --json run mutation crap_report --target $(TARGET)
 
 clean:
 	@$(MVNW) clean

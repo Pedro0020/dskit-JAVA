@@ -119,10 +119,13 @@ class MutationAgent(BaseAgent):
         """
         Ejecuta tools/mutate.py sobre un módulo y resume el resultado.
 
-        `target` es una ruta relativa al módulo de producción (p. ej.
-        `{{ project_slug }}/features/build_features.py`). Cada mutante se
-        ejecuta con la suite en `tests` y un timeout por mutante.
+        Python: `target` es una ruta relativa al módulo de producción.
+        Java: `target` es una ruta .java o una clase totalmente cualificada;
+        la mutación la ejecuta PIT (`org.pitest:pitest-maven`, perfil `-Ppit`).
         """
+        if self.ctx.is_java:
+            return self._java_mutation(target)
+
         resolved = self._resolve_target(target, "run_mutation_testing")
         if isinstance(resolved, AgentResult):
             return resolved
@@ -214,13 +217,166 @@ class MutationAgent(BaseAgent):
             "detail": detail,
         }
 
+    # -- rama Java: PIT -------------------------------------------------------
+    def _java_target_class(self, target: str, action: str) -> AgentResult | str:
+        """Convierte `target` (ruta .java o FQCN) en una clase para `-DtargetClasses`."""
+        if not target:
+            return AgentResult(
+                False, self.name, action, "Falta la clase objetivo.",
+                needs=["¿Qué clase quieres mutar? (--target, ruta .java o FQCN)"],
+            )
+        if target.endswith(".java"):
+            src_dir = self.ctx.java_src_dir.resolve()
+            candidate = (self.ctx.root / target).resolve()
+            if not candidate.exists() or not candidate.is_relative_to(src_dir):
+                return AgentResult(
+                    False, self.name, action,
+                    f"'{target}' no existe o no está bajo src/main/java.",
+                )
+            rel = candidate.relative_to(src_dir)
+            return ".".join(rel.parts)[: -len(".java")]
+        return target  # FQCN tal cual (p. ej. com.ejemplo.Servicio)
+
+    def _java_mutation(self, target: str) -> AgentResult:
+        from agents.exceptions import MissingDependencyError
+        from agents.tools.maven_tool import MavenTool
+
+        target_class = self._java_target_class(target, "run_mutation_testing")
+        if isinstance(target_class, AgentResult):
+            return target_class
+
+        try:
+            proc = MavenTool.run(
+                self.ctx.root,
+                [
+                    "org.pitest:pitest-maven:mutationCoverage",
+                    f"-DtargetClasses={target_class}",
+                    "-DoutputFormats=XML,HTML",
+                ],
+                timeout=1800,
+            )
+        except MissingDependencyError as exc:
+            return AgentResult(False, self.name, "run_mutation_testing", str(exc))
+        except ToolExecutionError as exc:
+            return AgentResult(False, self.name, "run_mutation_testing", str(exc))
+
+        reports_root = self.ctx.root / "target" / "pit-reports"
+        xml_reports = sorted(reports_root.rglob("mutations.xml")) if reports_root.exists() else []
+        if not xml_reports:
+            return AgentResult(
+                False, self.name, "run_mutation_testing",
+                f"PIT no generó mutations.xml (rc={proc.returncode}) — revisa que la clase y sus tests existan.",
+                data={"stdout": proc.stdout[-1500:], "stderr": proc.stderr[-1500:]},
+            )
+
+        report = MavenTool.parse_pit_summary(xml_reports[-1])
+        survivors = report["survived"]
+        warnings = []
+        if survivors:
+            warnings.append(
+                f"{survivors} mutante(s) sobrevivieron: hay código de producción que los "
+                f"tests no protegen. Revisa los sitios marcados y decide si merecen test "
+                f"(o si están fuera del alcance de la feature)."
+            )
+        return AgentResult(
+            survivors == 0,
+            self.name,
+            "run_mutation_testing",
+            f"Score de mutación {report['score']}% sobre {target_class} "
+            f"({report['killed']} killed, {report['survived']} survived, "
+            f"{report['timeout']} timeout).",
+            data=report,
+            warnings=warnings,
+        )
+
+    # -- rama Java: CRAP ------------------------------------------------------
+    _DECISION_POINTS = re.compile(
+        r"\b(if|for|while|do|case|catch|switch)\b|&&|\|\||\?"
+    )
+
+    def _java_complexity(self, path: Path) -> int:
+        """
+        Complejidad ciclomática estimada de un .java: 1 + puntos de decisión
+        (if/for/while/do/case/catch/switch/&&/||/?). Es una heurística sin
+        dependencias (misma filosofía que radon en Python): no sustituye a
+        PMD, pero da una señal CRAP comparable con cero tooling extra.
+        """
+        texto = path.read_text(encoding="utf-8", errors="replace")
+        # Fuera de strings/comentarios no es trivial en regex: se aproxima
+        # contando tokens — la heurística se documenta como estimación.
+        return 1 + len(self._DECISION_POINTS.findall(texto))
+
+    def _java_class_coverage(self, target: str) -> float | None:
+        """Cobertura LINE de la clase `target` desde jacoco.csv (None si no hay informe)."""
+        from agents.tools.maven_tool import MavenTool
+
+        csv_path = self.ctx.root / "target" / "site" / "jacoco" / "jacoco.csv"
+        if not csv_path.exists():
+            return None
+        try:
+            report = MavenTool.parse_jacoco_csv(csv_path)
+        except Exception:  # noqa: BLE001 — un CSV raro no debe tumbar el informe
+            return None
+        per_file = report.get("per_file", {})
+        if target in per_file:
+            return per_file[target]
+        return report.get("total_percent_covered")
+
+    def _java_crap(self, target: str) -> AgentResult:
+        resolved = self._resolve_target(target, "crap_report")
+        if isinstance(resolved, AgentResult):
+            return resolved
+        if resolved.suffix != ".java":
+            return AgentResult(
+                False, self.name, "crap_report",
+                f"'{target}' no es un archivo .java.",
+            )
+
+        coverage = self._java_class_coverage(target)
+        if coverage is None:
+            coverage = 0.0
+            warnings = [
+                "No se pudo medir la cobertura (jacoco.csv ausente) — CRAP se calcula con 0%, "
+                "lo que infla el riesgo. Ejecuta primero './mvnw test'."
+            ]
+        else:
+            warnings = []
+
+        cc = self._java_complexity(resolved)
+        crap = round(crap_value(cc, coverage), 2)
+        over = crap > CRAP_THRESHOLD
+        if over:
+            warnings.append(
+                f"CRAP {crap} > {CRAP_THRESHOLD:.0f} — código complejo y poco probado. "
+                "Testear más o reducir complejidad."
+            )
+        return AgentResult(
+            not over,
+            self.name,
+            "crap_report",
+            f"CRAP sobre '{target}': {crap} (cc~{cc}, cobertura {coverage:.1f}%).",
+            data={
+                "target": target,
+                "coverage": coverage,
+                "complexity": cc,
+                "crap": crap,
+                "threshold": CRAP_THRESHOLD,
+                "estimated": True,
+            },
+            warnings=warnings,
+        )
+
     # -- CRAP -----------------------------------------------------------------
     def crap_report(self, *, target: str) -> AgentResult:
         """
-        Métrica CRAP por función: complejidad ciclomática (radon) y cobertura
-        (pytest-cov). CRAP = cc^2 * (1 - coverage/100)^3 + cc. CRAP > 30 es
-        la señal clásica de riesgo de cambio.
+        Métrica CRAP por función (Python) o por clase (Java):
+        CRAP = cc^2 * (1 - coverage/100)^3 + cc. CRAP > 30 es la señal
+        clásica de riesgo de cambio. En Java la complejidad es una estimación
+        por puntos de decisión (sin radon/PMD) — se declara en data.
         """
+        if self.ctx.is_java:
+            return self._java_crap(target)
+
         resolved = self._resolve_target(target, "crap_report")
         if isinstance(resolved, AgentResult):
             return resolved

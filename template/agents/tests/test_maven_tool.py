@@ -95,3 +95,22 @@ def test_parse_maven_updates_extracts_lines():
 
 def test_parse_maven_updates_no_arrows():
     assert parse_maven_updates("nada que ver\n") == []
+
+
+def test_parse_pit_summary(tmp_path: Path):
+    report = tmp_path / "mutations.xml"
+    report.write_text(
+        '<mutations>'
+        '<mutation detected="true" status="KILLED"><sourceFile>Servicio.java</sourceFile><lineNumber>10</lineNumber><mutator>CONDITIONALS_BOUNDARY</mutator></mutation>'
+        '<mutation detected="true" status="SURVIVED"><sourceFile>Servicio.java</sourceFile><lineNumber>12</lineNumber><mutator>INVERT_NEGS</mutator></mutation>'
+        '<mutation detected="true" status="TIMED_OUT"><sourceFile>Servicio.java</sourceFile><lineNumber>14</lineNumber><mutator>MATH</mutator></mutation>'
+        '<mutation detected="false" status="NO_COVERAGE"><sourceFile>Servicio.java</sourceFile><lineNumber>20</lineNumber><mutator>X</mutator></mutation>'
+        '</mutations>'
+    )
+    summary = MavenTool.parse_pit_summary(report)
+    assert summary["total"] == 3
+    assert summary["killed"] == 2  # KILLED + TIMED_OUT
+    assert summary["survived"] == 1
+    assert summary["timeout"] == 1
+    assert summary["score"] == 66.7
+    assert len(summary["detail"]) == 3

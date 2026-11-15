@@ -149,3 +149,40 @@ class MavenTool:
         total_lines = covered_total + missed_total
         total = round(100.0 * covered_total / total_lines, 1) if total_lines else None
         return {"total_percent_covered": total, "per_file": per_file}
+
+    @staticmethod
+    def parse_pit_summary(path: Path) -> dict:
+        """
+        Resume `target/pit-reports/<ts>/mutations.xml` de PIT: score, killed,
+        survived, timeout y detalle por mutación. PIT cuenta TIMED_OUT como
+        detectada (el timeout del test es una detección).
+        """
+        root = ET.parse(path).getroot()
+        detected = killed = survived = timed_out = 0
+        detail = []
+        for m in root.iter("mutation"):
+            if m.get("detected") != "true":
+                continue
+            detected += 1
+            status = m.get("status", "")
+            if status == "SURVIVED":
+                survived += 1
+            else:
+                killed += 1
+                if status == "TIMED_OUT":
+                    timed_out += 1
+            detail.append({
+                "source": m.findtext("sourceFile") or "?",
+                "line": m.findtext("lineNumber") or "?",
+                "status": status,
+                "mutator": m.findtext("mutator") or "?",
+            })
+        score = round(100.0 * killed / detected, 1) if detected else 0.0
+        return {
+            "total": detected,
+            "killed": killed,
+            "survived": survived,
+            "timeout": timed_out,
+            "score": score,
+            "detail": detail,
+        }

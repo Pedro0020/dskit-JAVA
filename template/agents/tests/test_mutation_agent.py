@@ -128,3 +128,67 @@ def test_run_mutation_sin_tools_mutate_avisa(mutation):
     result = mutation.run_mutation_testing(target="modulo.py")
     assert not result.success
     assert "tools/mutate.py" in result.message or "use_sdd" in result.message
+
+
+# -- rama Java: PIT y CRAP estimado --------------------------------------------
+
+
+def _java_mutation_context(tmp_path):
+    from agents.config import ProjectConfig
+    from agents.context import SharedContext
+
+    (tmp_path / ".copier-answers.yml").write_text("language: java\n")
+    pkg = tmp_path / "src" / "main" / "java" / "com" / "ejemplo"
+    pkg.mkdir(parents=True)
+    (pkg / "Servicio.java").write_text(
+        "public class Servicio {\n"
+        "    public int decide(int a) {\n"
+        "        if (a > 0) { return 1; }\n"
+        "        if (a < 0 && a > -10) { return -1; }\n"
+        "        for (int i = 0; i < 3; i++) { if (a == i) { return i; } }\n"
+        "        while (a > 100) { a -= 10; }\n"
+        "        return a > 0 ? 0 : 2;\n"
+        "    }\n"
+        "}\n"
+    )
+    return SharedContext(root=tmp_path, config=ProjectConfig(extra={"language": "java"}))
+
+
+def test_java_target_class_desde_ruta_java(tmp_path):
+    ctx = _java_mutation_context(tmp_path)
+    agent = MutationAgent(context=ctx)
+    clase = agent._java_target_class("src/main/java/com/ejemplo/Servicio.java", "run_mutation_testing")
+    assert clase == "com.ejemplo.Servicio"
+
+
+def test_java_target_class_rechaza_fuera_de_src(tmp_path):
+    ctx = _java_mutation_context(tmp_path)
+    agent = MutationAgent(context=ctx)
+    (tmp_path / "Suelta.java").write_text("class Suelta {}\n")
+    resultado = agent._java_target_class("Suelta.java", "run_mutation_testing")
+    assert not resultado.success
+
+
+def test_java_complejidad_cuenta_puntos_de_decision(tmp_path):
+    ctx = _java_mutation_context(tmp_path)
+    agent = MutationAgent(context=ctx)
+    cc = agent._java_complexity(ctx.root / "src" / "main" / "java" / "com" / "ejemplo" / "Servicio.java")
+    # 1 base + if + if + && + for + if + while + ? = 8
+    assert cc == 8
+
+
+def test_java_crap_sin_cobertura_infla_riesgo(tmp_path):
+    ctx = _java_mutation_context(tmp_path)
+    agent = MutationAgent(context=ctx)
+    resultado = agent.crap_report(target="src/main/java/com/ejemplo/Servicio.java")
+    assert resultado.success is False  # CRAP alto con 0% de cobertura
+    assert resultado.data["estimated"] is True
+    assert resultado.data["crap"] > 30
+
+
+def test_java_crap_rechaza_no_java(tmp_path):
+    ctx = _java_mutation_context(tmp_path)
+    agent = MutationAgent(context=ctx)
+    (tmp_path / "README.md").write_text("# hola")
+    resultado = agent.crap_report(target="README.md")
+    assert not resultado.success
