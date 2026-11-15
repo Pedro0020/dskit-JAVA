@@ -80,6 +80,7 @@ DEFAULTS = dict(
     use_archunit=False,
     use_observability=False,
     use_graphify=False,
+    adopt_existing=False,
 )
 
 #: Variables Java que NO ramifican la matriz all-pairs de Python: se prueban
@@ -98,6 +99,7 @@ JAVA_ONLY = {
     "use_archunit",
     "use_observability",
     "use_graphify",
+    "adopt_existing",
 }
 
 # Combos que ya rompieron algo alguna vez. All-pairs cubre interacciones de 2
@@ -154,6 +156,18 @@ PINNED: list[tuple[str, dict]] = [
             migrations="flyway",
             java_version="21",
         ),
+    ),
+    (
+        "pinned:java-adopt-batch",
+        dict(language="java", adopt_existing=True, build_tool="maven",
+             framework="spring-boot-batch", db="h2", migrations="flyway",
+             java_version="21"),
+    ),
+    (
+        "pinned:java-adopt-web",
+        dict(language="java", adopt_existing=True, build_tool="gradle",
+             framework="spring-boot", db="none", migrations="none",
+             java_version="21"),
     ),
 ]
 

@@ -3,7 +3,69 @@
   "version": 1,
   "project": "{{ project_name }}",
   "features": [
-{% if language == 'java' %}
+ {% if adopt_existing %}
+    {
+      "id": "VERIFY-001",
+      "title": "Verificar el proyecto Java existente",
+      "description": "Confirmar que el build y los tests del proyecto adoptado están en verde antes de usar el arnés.",
+      "acceptance_criteria": [
+        "El build existente termina en verde (./mvnw verify o ./gradlew build)",
+        "src/main/java existe y contiene código del proyecto",
+        "src/test/java existe y contiene tests",
+        "./init.sh termina con ENTORNO LISTO"
+      ],
+      "status": "pending",
+      "depends_on": []
+    },
+    {
+      "id": "EVAL-001",
+      "title": "Validar el plano de control",
+      "description": "Verificar que los agentes, contratos y el backlog funcionan sin haber generado el scaffold de dskit.",
+      "acceptance_criteria": [
+        "agents list funciona usando el plano de control del proyecto",
+        "agents-eval pasa harness y contracts",
+        "El árbol de aplicación original no ha sido sobrescrito"
+      ],
+      "status": "pending",
+      "depends_on": ["VERIFY-001"]
+    }{% if 'batch' in framework %},
+    {
+      "id": "JOB-001",
+      "title": "Validar el job batch existente",
+      "description": "Aplicar la revisión de idempotencia, transacciones y restartability al job real existente.",
+      "acceptance_criteria": [
+        "El job real corre end-to-end sobre datos controlados",
+        "El job es reiniciable e idempotente según evidencia reproducible",
+        "El agente batch valida la configuración sin falsos positivos"
+      ],
+      "status": "pending",
+      "depends_on": ["EVAL-001"]
+    }{% endif %}{% if framework == 'spring-boot' or framework == 'spring-boot-web+batch' %},
+    {
+      "id": "API-001",
+      "title": "Validar el contrato HTTP existente",
+      "description": "Aplicar la revisión de versionado, validación, errores y seguridad a la API real existente.",
+      "acceptance_criteria": [
+        "Los endpoints /api/v1 existentes tienen tests reproducibles",
+        "Los payloads inválidos no producen errores 500",
+        "El agente api y la rúbrica revisan el contrato sin tocar el scaffold"
+      ],
+      "status": "pending",
+      "depends_on": ["EVAL-001"]
+    }{% endif %},
+    {
+      "id": "DOC-001",
+      "title": "Documentar la adopción",
+      "description": "Dejar documentado qué arnés se añadió y qué partes del proyecto existente siguen siendo propiedad del equipo.",
+      "acceptance_criteria": [
+        "El README del proyecto documenta el comando de build y el arnés",
+        "El historial registra la adopción y sus decisiones",
+        "./init.sh termina con ENTORNO LISTO"
+      ],
+      "status": "pending",
+      "depends_on": ["EVAL-001"]
+    }
+ {% elif language == 'java' %}
     {
       "id": "SCOPE-001",
       "title": "Definir el objetivo y la métrica",

@@ -31,6 +31,13 @@ proyecto_perfil:
     - manual
   default: estandar
 
+# Modo adopción: instala el plano de control sobre un proyecto Java existente.
+# No genera ni actualiza el scaffold de aplicación.
+adopt_existing:
+  type: bool
+  help: "¿Instalar el arnés sobre un proyecto Java existente sin tocar su scaffold?"
+  default: false
+
 # --- Proyecto ---
 project_name:
   type: str
@@ -661,6 +668,25 @@ _exclude:
   - "{% if language == 'java' and not use_observability %}src/test/java/{{ base_package_path }}/ActuatorExposureTest.java{% endif %}"
   - "{% if language == 'java' and migrations != 'flyway' %}src/main/resources/db/migration{% endif %}"
   - "{% if language == 'java' and migrations != 'liquibase' %}src/main/resources/db/changelog{% endif %}"
+  # En adopción el proyecto de aplicación ya existe: solo viaja el plano de
+  # control. Las exclusiones absolutas evitan tocar build, código y tests.
+  - "{% if adopt_existing %}/src{% endif %}"
+  - "{% if adopt_existing %}/pom.xml{% endif %}"
+  - "{% if adopt_existing %}/mvnw{% endif %}"
+  - "{% if adopt_existing %}/mvnw.cmd{% endif %}"
+  - "{% if adopt_existing %}/.mvn{% endif %}"
+  - "{% if adopt_existing %}/build.gradle{% endif %}"
+  - "{% if adopt_existing %}/settings.gradle{% endif %}"
+  - "{% if adopt_existing %}/gradle{% endif %}"
+  - "{% if adopt_existing %}/gradlew{% endif %}"
+  - "{% if adopt_existing %}/gradlew.bat{% endif %}"
+  - "{% if adopt_existing %}/README.md{% endif %}"
+  - "{% if adopt_existing %}/CHANGELOG.md{% endif %}"
+  - "{% if adopt_existing %}/LICENSE{% endif %}"
+  - "{% if adopt_existing %}/SECURITY.md{% endif %}"
+  - "{% if adopt_existing %}/CONTRIBUTING.md{% endif %}"
+  - "{% if adopt_existing %}/Makefile{% endif %}"
+  - "{% if adopt_existing %}/.gitignore{% endif %}"
 
 _subdirectory: template
 _templates_suffix: ""
